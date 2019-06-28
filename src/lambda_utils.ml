@@ -97,7 +97,7 @@ let rec hash_lambda = function
 #if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,_) ->
 #else
-  | Lswitch (l,s,_) ->
+  | Lswitch (l,s) ->
 #endif
      hash_string_lst "Lswitch"
        [ hash_lambda l
