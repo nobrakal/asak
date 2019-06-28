@@ -94,7 +94,11 @@ let rec hash_lambda = function
      hash_string_lst "Lifused"
        [ hash_lambda l
        ]
+#if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,_) ->
+#else
+  | Lswitch (l,s,_) ->
+#endif
      hash_string_lst "Lswitch"
        [ hash_lambda l
        ; hash_lst (hash_case string_of_int hash_lambda) "sw_consts" s.sw_consts
@@ -186,10 +190,17 @@ let replace ident body =
      Lwhile (aux l, aux r)
   | Lifused (i,l) ->
      Lifused (i, aux l)
+#if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,i) ->
      let sw_consts = insnd s.sw_consts in
      let sw_blocks = insnd s.sw_blocks in
      Lswitch (aux l, {s with sw_consts; sw_blocks}, i)
+#else
+  | Lswitch (l,s) ->
+     let sw_consts = insnd s.sw_consts in
+     let sw_blocks = insnd s.sw_blocks in
+     Lswitch (aux l, {s with sw_consts; sw_blocks})
+#endif
   | Lstringswitch (l,lst,opt,e) ->
      Lstringswitch (aux l, insnd lst, inopt opt, e)
   | Lassign (i,l) ->
@@ -254,10 +265,17 @@ let rec inline_all x =
      Lwhile (inline_all l, inline_all r)
   | Lifused (i,l) ->
      Lifused (i, inline_all l)
+#if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,i) ->
      let sw_consts = insnd s.sw_consts in
      let sw_blocks = insnd s.sw_blocks in
      Lswitch (inline_all l, {s with sw_consts; sw_blocks},i)
+#else
+  | Lswitch (l,s) ->
+     let sw_consts = insnd s.sw_consts in
+     let sw_blocks = insnd s.sw_blocks in
+     Lswitch (inline_all l, {s with sw_consts; sw_blocks})
+#endif
   | Lstringswitch (l,lst,opt,e) ->
      Lstringswitch (inline_all l, insnd lst, inopt opt, e)
   | Lassign (i,l) ->
