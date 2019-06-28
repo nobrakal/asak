@@ -1,4 +1,4 @@
 (library
+ (public_name asak)
  (name asak)
- (libraries compiler-libs.common)
- )
+ (libraries compiler-libs.common))
