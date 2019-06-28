@@ -157,7 +157,7 @@ let hm_part prof m =
   let hashtbl = Hashtbl.create 100 in
   List.iter
     (fun (t,(_,x)) ->
-      let hash,lst = Lambda_utils.hash_lambda prof x in
+      let hash,lst = Lambda_utils.hash_lambda true prof x in
       Hashtbl.add hashtbl t (hash::lst)
     ) m;
   Clustering.cluster hashtbl

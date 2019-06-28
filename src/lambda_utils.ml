@@ -10,22 +10,30 @@ open Asttypes
 
 let h1 x = 1,[],Digest.string x
 
-let hash_string_lst x xs =
+let hash_string_lst is_sorting x xs =
+  let sort xs =
+    if is_sorting
+    then List.sort compare xs
+    else xs in
   let p,lst, xs =
     List.fold_right
       (fun (u,l,x) (v,l',xs) -> u+v,(u,x)::l@l',x::xs)
       xs (0,[],[]) in
-  1+p,lst,Digest.string @@
-    String.concat "" (Digest.string x::xs)
+  let res =
+    Digest.string @@
+      String.concat "" @@
+        sort @@
+          Digest.string x::xs in
+  1+p,lst,res
 
-let hash_lst f x xs =
+let hash_lst is_sorting f x xs =
   let res =
     List.fold_left
       (fun acc x -> f x :: acc)
       [] xs in
-  hash_string_lst x (List.sort compare res)
+  hash_string_lst is_sorting x res
 
-let hash_lst_anon f xs = hash_lst f "" xs
+let hash_lst_anon is_sorting f xs = hash_lst is_sorting f "" xs
 
 let hash_case g f (i,x) =
   let a,b,c = f x in
@@ -47,7 +55,11 @@ let hash_meth_kind x = h1 @@
    | Public -> "Public"
    | Cached -> "Cached"
 
-let rec hash_lambda = function
+let hash_lambda is_sorting =
+  let hash_string_lst = hash_string_lst is_sorting in
+  let hash_lst_anon f = hash_lst_anon is_sorting f in
+  let hash_lst f = hash_lst is_sorting f in
+  let rec hash_lambda = function
   | Lvar _ -> h1 "Lvar"
   | Lconst _ -> h1 "Lconst"
   | Lapply x ->
@@ -143,16 +155,20 @@ let rec hash_lambda = function
        ; hash_lambda b
        ; hash_lst_anon hash_lambda xs
        ]
+  in hash_lambda
 
-let sort_filter alpha x xs =
+let sort_filter is_sorting alpha x xs =
   let x = float_of_int x in
-  List.sort compare (List.filter (fun (u,_) -> float_of_int u > alpha *. x) xs)
+  let filtered = List.filter (fun (u,_) -> float_of_int u > alpha *. x) xs in
+  if is_sorting
+  then List.sort compare filtered
+  else filtered
 
-let hash_lambda alpha l =
+let hash_lambda is_sorting alpha l =
   let alpha = (float_of_int alpha) /. 100. in
-  let poids,ss_arbres,h = hash_lambda l
+  let poids,ss_arbres,h = hash_lambda is_sorting l
   in
-  (poids,h), sort_filter alpha poids ss_arbres
+  (poids,h), sort_filter is_sorting alpha poids ss_arbres
 
 (* Replace every occurence of ident by its body *)
 let replace ident body =
