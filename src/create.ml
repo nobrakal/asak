@@ -44,8 +44,15 @@ let type_with_init lst =
   try ret (Typemod.type_structure (init_env ()) lst Location.none)
   with Typetexp.Error _ | Typecore.Error _ -> fail
 
+let extract_typedtree =
+#if OCAML_VERSION >= (4, 08, 0)
+  fun (s,_,_,_) -> s
+#else
+  fun (s,_,_) -> s
+#endif
+
 let typedtree_of_parsetree (lst : Parsetree.structure) =
-  map (fun (s,_,_) -> s) (type_with_init lst)
+  map extract_typedtree (type_with_init lst)
 
 (* Search if a pattern has the right name *)
 let has_name f x =

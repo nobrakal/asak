@@ -8,7 +8,9 @@ dev-repo: "git+https://github.com/nobrakal/asak.git"
 synopsis: "Partitioning OCaml codes"
 description: ""
 depends: [
+  "ocaml" {>= "4.05"}
   "dune" {build & > "1.5"}
+  "cppo" {build & >= "1.6.0"}
 ]
 
 build: [
