@@ -1,0 +1,4 @@
+(library
+ (name asak)
+ (libraries compiler-libs.common)
+ )
