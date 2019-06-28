@@ -13,19 +13,17 @@ type 'a partition =
     clusters : 'a list Wtree.wtree list
   }
 
-(* Get the parsetree of an OCaml expression *)
-let impl_of_string (s : string) =
+let parsetree_of_string str =
   try
     let without_directives =
       String.concat ";;" @@
         List.filter
           (fun x -> let x = String.trim x in String.length x > 0 && x.[0] != '#') @@
-          Str.split (Str.regexp_string ";;") s in
+          Str.split (Str.regexp_string ";;") str in
     ret (Parse.implementation (Lexing.from_string without_directives))
   with
   | Lexer.Error _ | Syntaxerr.Error _ -> fail
 
-(* Used to get the _last_ definition of a function *)
 let take_until_last p =
   let rec aux = function
   | [] -> None
@@ -42,13 +40,11 @@ let init_env () =
   Compmisc.init_path true;
   Compmisc.initial_env () 
 
-(* Type a structure with the initial environment *)
 let type_with_init lst =
   try ret (Typemod.type_structure (init_env ()) lst Location.none)
   with Typetexp.Error _ | Typecore.Error _ -> fail
 
-(* Convert a Parsetree to a Typedtree *)
-let to_typed_tree (lst : Parsetree.structure) =
+let typedtree_of_parsetree (lst : Parsetree.structure) =
   map (fun (s,_,_) -> s) (type_with_init lst)
 
 (* Search if a pattern has the right name *)
@@ -58,7 +54,6 @@ let has_name f x =
   | Tpat_var (_,v) -> Asttypes.(v.txt) = f
   | _ -> false
 
-(* Get the type of the last definition of f in the typedtree *)
 let get_type_of_f_in_last f tree =
   let open Typedtree in
   let aux acc x =
@@ -88,15 +83,14 @@ let find_func f xs  =
   in
   to_err (take_until_last pred xs)
 
-(* Return a list of all saves with their definition of the function *)
 let parse_all_implementations fun_name =
     List.fold_left (* filter_map_rev *)
       (fun acc (t,save) ->
         maybe acc (fun x -> x :: acc) @@ run @@
           begin
-          impl_of_string save
-          >>= find_func fun_name
-          >>= fun r -> ret (t,r)
+            parsetree_of_string save
+            >>= find_func fun_name
+            >>= fun r -> ret (t,r)
           end
       ) []
 
@@ -105,12 +99,11 @@ let rec last = function
   | [x] -> x
   | _::xs -> last xs
 
-(* Find the type of fun_name in the solution of the exercise *)
 let find_sol_type str fun_name =
   let found_type =
-    impl_of_string str
+    parsetree_of_string str
     >>= find_func fun_name
-    >>= to_typed_tree
+    >>= typedtree_of_parsetree
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
   | None -> failwith "Required function not implemented in solution"
@@ -121,8 +114,7 @@ let rec get_last_of_seq = function
   | Lambda.Lsequence (_,u) -> get_last_of_seq u
   | x -> x
 
-(* Convert a Typedtree.structure to a lambda expression *)
-let to_lambda (lst : Typedtree.structure) =
+let lambda_of_typedtree lst =
   get_last_of_seq @@
     Lambda_utils.inline_all @@
       Simplif.simplify_lambda "" @@
@@ -140,12 +132,12 @@ let partition_FunExist sol_type fun_name =
   let eq_type = eq_type init_env in
   let pred lst =
     let tree =
-      to_typed_tree lst
+      typedtree_of_parsetree lst
       >>= fun t ->
       get_type_of_f_in_last fun_name t
       >>= fun x ->
       if eq_type sol_type x
-      then ret (last lst, to_lambda t)
+      then ret (last lst, lambda_of_typedtree t)
       else fail in
     run tree in
   let aux (bad,good) (n,x) =

@@ -74,8 +74,7 @@ let get_min_dist xs =
         )
      xs
     )
-    xs;
-  !min
+    xs; !min
 
 (* Merge two elements of a cluster *)
 let merge p u v xs =
