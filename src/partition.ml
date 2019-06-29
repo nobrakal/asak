@@ -64,15 +64,11 @@ let find_func f xs  =
   to_err (take_until_last pred xs)
 
 let parse_all_implementations fun_name =
-    List.fold_left (* filter_map_rev *)
-      (fun acc (t,save) ->
-        maybe acc (fun x -> x :: acc) @@ run @@
-          begin
-            parsetree_of_string save
-            >>= find_func fun_name
-            >>= fun r -> ret (t,r)
-          end
-      ) []
+  let pred (t,save) =
+    parsetree_of_string save
+    >>= find_func fun_name
+    >>= fun r -> ret (t,r)
+  in filter_rev_map pred
 
 let rec last = function
   | [] -> failwith "last"
@@ -94,12 +90,6 @@ let rec get_last_of_seq = function
   | Lambda.Lsequence (_,u) -> get_last_of_seq u
   | x -> x
 
-let lambda_of_typedtree lst =
-  get_last_of_seq @@
-    Lambda_utils.inline_all @@
-      Simplif.simplify_lambda "" @@
-        Translmod.transl_toplevel_definition lst
-
 (* Test if two types are "equal" *)
 let eq_type env t1 t2 =
   try Ctype.unify env t1 t2; true with
@@ -117,7 +107,7 @@ let partition_FunExist sol_type fun_name =
       get_type_of_f_in_last fun_name t
       >>= fun x ->
       if eq_type sol_type x
-      then ret (last lst, lambda_of_typedtree t)
+      then ret (last lst, get_last_of_seq @@ lambda_of_typedtree t)
       else fail in
     run tree in
   let aux (bad,good) (n,x) =

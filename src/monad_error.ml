@@ -31,3 +31,8 @@ end = struct
   let run x = x
   let to_err x = x
 end
+
+open Err
+
+let filter_rev_map f xs =
+  List.fold_left (fun acc x -> maybe acc (fun x -> x :: acc) @@ run (f x)) [] xs

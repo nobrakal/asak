@@ -33,3 +33,8 @@ let extract_typedtree =
 let type_with_init lst =
   try ret (extract_typedtree @@ Typemod.type_structure (init_env ()) lst Location.none)
   with Typetexp.Error _ | Typecore.Error _ -> fail
+
+let lambda_of_typedtree lst =
+  Lambda_utils.inline_all @@
+    Simplif.simplify_lambda "" @@
+      Translmod.transl_toplevel_definition lst

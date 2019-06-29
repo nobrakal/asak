@@ -19,3 +19,5 @@ module Err : sig
   val run : 'a t -> 'a option
   val to_err : 'a option -> 'a t
 end
+
+val filter_rev_map : ('a -> 'b Err.t) -> 'a list -> 'b list
