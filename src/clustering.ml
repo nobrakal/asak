@@ -97,7 +97,7 @@ let remove_fst_in_tree t =
     (fun (_,x) -> Leaf x) t
 
 (* Compute a hierarchical cluster from data *)
-let cluster (m : ('a, (int * string) list) Hashtbl.t) : ('a list) wtree list =
+let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
   let rec aux res = function
     | [] -> failwith "cluster, empty list"
     | [a] -> a::res
@@ -108,7 +108,8 @@ let cluster (m : ('a, (int * string) list) Hashtbl.t) : ('a list) wtree list =
   in
   let start =
     List.map (fun x -> Leaf x) @@
-      Hashtbl.fold (fun x xs -> add_in_cluster x (List.sort compare xs)) m []
+      List.fold_left
+        (fun acc (x,xs) -> add_in_cluster x (List.sort compare xs) acc) [] m
   in
   List.sort
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@

@@ -12,9 +12,11 @@ open Parse_fragment
 
 let split_sequence_with hard_weight t =
   let threshold = Lambda_utils.Hard hard_weight in
-  let hash x = snd @@ fst @@ Lambda_utils.hash_lambda false threshold x in
+  let hash x =
+    let (x,xs) = Lambda_utils.hash_lambda false threshold x in
+    x::xs in
   let rec aux = function
-    | Lambda.Lsequence (x,u) -> print_endline (hash x);  (t, hash x) :: aux u
+    | Lambda.Lsequence (x,u) -> (t, hash x) :: aux u
     | x -> [t, hash x]
   in aux
 
@@ -29,18 +31,4 @@ let parse_all_implementations hard_weight lst =
 
 let search hard_weight str_list =
   let all_hashs = parse_all_implementations hard_weight str_list in
-  let hash_set = Hashtbl.create 100 in
-  List.iter
-    (fun (t,x) ->
-      match Hashtbl.find_opt hash_set x with
-      | None -> Hashtbl.add hash_set x [t]
-      | Some ts ->
-         Hashtbl.remove hash_set x;
-         Hashtbl.add hash_set x (t::ts)
-    ) all_hashs;
-  Hashtbl.fold
-    (fun _ xs acc ->
-      if List.length xs > 1
-      then xs::acc
-      else acc
-    ) hash_set []
+  Clustering.cluster all_hashs

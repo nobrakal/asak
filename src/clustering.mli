@@ -7,4 +7,4 @@
 
 open Wtree
 
-val cluster : ('a, (int * string) list) Hashtbl.t -> ('a list) wtree list
+val cluster : ('a * (int * string) list) list -> ('a list) wtree list

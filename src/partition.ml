@@ -118,13 +118,13 @@ let partition_FunExist sol_type fun_name =
 
 let hm_part prof m =
   let threshold = Lambda_utils.Percent prof in
-  let hashtbl = Hashtbl.create 100 in
-  List.iter
-    (fun (t,(_,x)) ->
-      let hash,lst = Lambda_utils.hash_lambda true threshold x in
-      Hashtbl.add hashtbl t (hash::lst)
-    ) m;
-  Clustering.cluster hashtbl
+  let lst =
+    List.fold_left
+      (fun acc (t,(_,x)) ->
+        let hash,lst = Lambda_utils.hash_lambda true threshold x in
+        (t,(hash::lst))::acc
+      ) [] m in
+  Clustering.cluster lst
 
 let partition prof fun_name sol codes =
   let codes = parse_all_implementations fun_name codes in
