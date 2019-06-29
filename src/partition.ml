@@ -8,21 +8,12 @@
 open Monad_error
 open Err
 
+open Parse_fragment
+
 type 'a partition =
   { bad_type : 'a list;
     clusters : 'a list Wtree.wtree list
   }
-
-let parsetree_of_string str =
-  try
-    let without_directives =
-      String.concat ";;" @@
-        List.filter
-          (fun x -> let x = String.trim x in String.length x > 0 && x.[0] != '#') @@
-          Str.split (Str.regexp_string ";;") str in
-    ret (Parse.implementation (Lexing.from_string without_directives))
-  with
-  | Lexer.Error _ | Syntaxerr.Error _ -> fail
 
 let take_until_last p =
   let rec aux = function
@@ -35,24 +26,6 @@ let take_until_last p =
         else None
      | Some xs -> Some (x::xs)
   in aux
-
-let init_env () =
-  Compmisc.init_path true;
-  Compmisc.initial_env () 
-
-let type_with_init lst =
-  try ret (Typemod.type_structure (init_env ()) lst Location.none)
-  with Typetexp.Error _ | Typecore.Error _ -> fail
-
-let extract_typedtree =
-#if OCAML_VERSION >= (4, 08, 0)
-  fun (s,_,_,_) -> s
-#else
-  fun (s,_,_) -> s
-#endif
-
-let typedtree_of_parsetree (lst : Parsetree.structure) =
-  map extract_typedtree (type_with_init lst)
 
 (* Search if a pattern has the right name *)
 let has_name f x =
@@ -110,7 +83,7 @@ let find_sol_type str fun_name =
   let found_type =
     parsetree_of_string str
     >>= find_func fun_name
-    >>= typedtree_of_parsetree
+    >>= type_with_init
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
   | None -> failwith "Required function not implemented in solution"
@@ -139,7 +112,7 @@ let partition_FunExist sol_type fun_name =
   let eq_type = eq_type init_env in
   let pred lst =
     let tree =
-      typedtree_of_parsetree lst
+      type_with_init lst
       >>= fun t ->
       get_type_of_f_in_last fun_name t
       >>= fun x ->
