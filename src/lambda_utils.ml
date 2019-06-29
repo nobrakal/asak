@@ -8,6 +8,8 @@
 open Lambda
 open Asttypes
 
+type threshold = Percent of int | Hard of int
+
 let h1 x = 1,[],Digest.string x
 
 let hash_string_lst is_sorting x xs =
@@ -157,18 +159,20 @@ let hash_lambda is_sorting =
        ]
   in hash_lambda
 
-let sort_filter is_sorting alpha x xs =
-  let x = float_of_int x in
-  let filtered = List.filter (fun (u,_) -> float_of_int u > alpha *. x) xs in
+let sort_filter is_sorting threshold main_weight xs =
+  let pred =
+    match threshold with
+    | Percent i -> fun u -> float_of_int u > ((float_of_int i) /. 100.) *. main_weight
+    | Hard i -> fun u -> u > i in
+  let filtered = List.filter (fun (u,_) -> pred u) xs in
   if is_sorting
   then List.sort compare filtered
   else filtered
 
-let hash_lambda is_sorting alpha l =
-  let alpha = (float_of_int alpha) /. 100. in
-  let poids,ss_arbres,h = hash_lambda is_sorting l
-  in
-  (poids,h), sort_filter is_sorting alpha poids ss_arbres
+let hash_lambda is_sorting threshold l =
+  let main_weight,ss_arbres,h = hash_lambda is_sorting l in
+  let fmain_weight = float_of_int main_weight in
+  (main_weight,h), sort_filter is_sorting threshold fmain_weight ss_arbres
 
 (* Replace every occurence of ident by its body *)
 let replace ident body =

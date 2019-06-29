@@ -10,24 +10,25 @@ open Err
 
 open Parse_fragment
 
-let split_sequence_with t =
-  let hash x = snd @@ fst @@ Lambda_utils.hash_lambda false 99 x in
+let split_sequence_with hard_weight t =
+  let threshold = Lambda_utils.Hard hard_weight in
+  let hash x = snd @@ fst @@ Lambda_utils.hash_lambda false threshold x in
   let rec aux = function
     | Lambda.Lsequence (x,u) -> print_endline (hash x);  (t, hash x) :: aux u
     | x -> [t, hash x]
   in aux
 
-let parse_all_implementations lst =
+let parse_all_implementations hard_weight lst =
   let pred (t,save) =
     parsetree_of_string save
     >>= type_with_init
     >>= fun r ->
-    let r = split_sequence_with t @@ lambda_of_typedtree r in
+    let r = split_sequence_with hard_weight t @@ lambda_of_typedtree r in
     ret r
   in List.concat @@ filter_rev_map pred lst
 
-let search str_list =
-  let all_hashs = parse_all_implementations str_list in
+let search hard_weight str_list =
+  let all_hashs = parse_all_implementations hard_weight str_list in
   let hash_set = Hashtbl.create 100 in
   List.iter
     (fun (t,x) ->
