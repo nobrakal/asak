@@ -6,7 +6,7 @@ Partitioning OCaml codes.
 
 ## Why ?
 
-* For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close", and in the same sub-class if they are identical (up to alpha-renaiming and some inlining).
+* For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close", and in the same sub-class if they are identical (up to alpha-renaming and some inlining).
 
 * For redundancy detection: while not being totally implemented, the goal is to produce a module `Asak.Factorization` that will take a list of OCaml codes and detect codes that can be factorized.
 
@@ -22,4 +22,4 @@ For more details, see [this blog post](https://blog.nyarlathotep.one/2019/06/lea
 
 #### The name
 
-This tool is about making partitions. Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monocord violin.
+This tool is about making partitions. Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monochord violin.
