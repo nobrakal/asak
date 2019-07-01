@@ -1,12 +1,14 @@
 opam-version: "2.0"
+name: "asak"
+version: "0.1"
+synopsis: "Partitioning OCaml codes"
+description: "Asak provides functions to hash OCaml codes, such that similar codes have the same hash.\nIt is then used to partition codes implementing the same function, or help to factorize existing code."
 maintainer: ["alexandre@moine.me"]
 authors: ["Alexandre Moine"]
 bug-reports: "https://github.com/nobrakal/asak/issues"
 homepage: "https://github.com/nobrakal/asak"
 license: "MIT"
 dev-repo: "git+https://github.com/nobrakal/asak.git"
-synopsis: "Partitioning OCaml codes"
-description: "Asak provides functions to hash OCaml codes, such that similar codes have the same hash.\nIt is then used to partition codes implementing the same function, or help to factorize existing code."
 depends: [
   "ocaml" {>= "4.05"}
   "dune" {build & > "1.5"}
