@@ -29,7 +29,7 @@ as percent (a number between 0 and 100) in term of the weight of the whole AST.
     @param list List of valid OCaml codes, using only the standard library, that may
 contains the searched function.
 *)
-val partition :
+val create :
   int
   -> string
   -> string

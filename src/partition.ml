@@ -126,7 +126,7 @@ let hm_part prof m =
       ) [] m in
   Clustering.cluster lst
 
-let partition prof fun_name sol codes =
+let create prof fun_name sol codes =
   let codes = parse_all_implementations fun_name codes in
   let sol_type = find_sol_type fun_name sol in
   let bad_type,funexist = partition_FunExist sol_type fun_name codes in
