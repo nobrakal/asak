@@ -1,5 +1,7 @@
 ﻿# asak
 
+[![Build Status](https://travis-ci.com/nobrakal/asak.svg?branch=master)](https://travis-ci.com/nobrakal/asak)
+
 Partitioning OCaml codes.
 
 ## Why ?
