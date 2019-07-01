@@ -5,4 +5,4 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
-val search : int -> ('a * string) list -> 'a list Wtree.wtree list
+val search : int -> (string * string) list -> string list Wtree.wtree list
