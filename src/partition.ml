@@ -8,7 +8,7 @@
 open Monad_error
 open Err
 
-open Parse_fragment
+open Parse_structure
 
 type 'a partition =
   { bad_type : 'a list;

@@ -8,7 +8,7 @@
 open Monad_error
 open Err
 
-open Parse_fragment
+open Parse_structure
 
 let find_name = function
   | Lambda.Llet (_,_,n,_,_) -> Ident.name n
