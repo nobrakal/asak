@@ -7,4 +7,7 @@
 
 open Wtree
 
+(**
+Given a list of AST hashes (identified by a key), perform a complete-linkage clustering,
+using a custom distance based on symmetric difference. *)
 val cluster : ('a * (int * string) list) list -> ('a list) wtree list
