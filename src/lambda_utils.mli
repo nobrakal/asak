@@ -7,11 +7,11 @@
 
 type threshold = Percent of int | Hard of int
 
-(** Hash a lambda expression
-    @param bool If true, then all lists of hash will be sorted.
+(** Hash a lambda expression. Usage: [hash_lambda will_sort threshold expr]
+    @param will_sort If true, then all lists of hash will be sorted.
 This is useful to identify more codes, but can leads to some false-positive.
      @param threshold Used to decide which sub-AST's hash is kept.
-     @param lambda The expression.
+     @param expr The expression.
 
      @return A tuple with the main hash, and a list of hashes of sub-ASTs.
 All hashes are given with the weight of their AST.
@@ -22,5 +22,5 @@ val hash_lambda :
   -> Lambda.lambda
   -> (int*string) * (int*string) list
 
-(** Inline all possible (ie. without side effects) expressions in a lambda expression *)
+(** Inline all possible (ie. without side effect) expressions in a lambda expression *)
 val inline_all : Lambda.lambda -> Lambda.lambda
