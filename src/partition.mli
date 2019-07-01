@@ -8,7 +8,7 @@
 (** Type used for presenting a partition. *)
 type 'a partition =
   { bad_type : 'a list ;
-    (** Contains keys identifying codes that either don't implement the searched function,
+    (** Keys identifying codes that either don't implement the searched function,
         or implement it with a bad type. *)
     clusters : 'a list Wtree.wtree list;
     (** Main result.
@@ -28,8 +28,6 @@ as percent (a number between 0 and 100) in term of the weight of the whole AST.
     @param string2 A reference implementation, used only for typing
     @param list List of valid OCaml codes, using only the standard library, that may
 contains the searched function.
-
-         @return The partition
 *)
 val partition :
   int

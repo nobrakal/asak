@@ -8,12 +8,13 @@
 type threshold = Percent of int | Hard of int
 
 (** Hash a lambda expression
-@param bool If true, then all lists of hash will be sorted.
-@param threshold Used to decide which sub-AST's hash is kept
-@param lambda The expression
+    @param bool If true, then all lists of hash will be sorted.
+This is useful to identify more codes, but can leads to some false-positive.
+     @param threshold Used to decide which sub-AST's hash is kept.
+     @param lambda The expression.
 
-@return A tuple with the main hash, and a list of hashes of the sub-ASTs.
-All hash are given with the weight of their AST.
+     @return A tuple with the main hash, and a list of hashes of sub-ASTs.
+All hashes are given with the weight of their AST.
 *)
 val hash_lambda :
   bool
