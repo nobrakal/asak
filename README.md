@@ -22,4 +22,12 @@ For more details, see [this blog post](https://blog.nyarlathotep.one/2019/06/lea
 
 #### The name
 
-This tool is about making partitions. Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monochord violin.
+This tool is about making partitions. "Partition" is the word in french for "sheet music". Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monochord violin.
+
+### License and copyright
+
+Asak is released under the MIT license. The copyright is held by IRIF / OCaml Software Foundation.
+
+### Authors
+
+Asak was developed by Alexandre Moine.
