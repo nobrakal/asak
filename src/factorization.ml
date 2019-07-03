@@ -7,8 +7,16 @@
 
 open Monad_error
 open Err
+open Utils
 
 open Parse_structure
+
+let load_file f =
+  let ic = open_in f in
+  let n = in_channel_length ic in
+  let s = really_input_string ic n in
+  close_in ic;
+  s
 
 let find_name = function
   | Lambda.Llet (_,_,n,_,_) -> Ident.name n
@@ -26,15 +34,17 @@ let split_sequence_with hard_weight t =
     | x -> [add_name t x, hash x]
   in aux
 
-let parse_all_implementations hard_weight lst =
-  let pred (t,save) =
-    parsetree_of_string save
-    >>= type_with_init
+let parse_all_implementations hard_weight files_list =
+  let pred (lib,filename) =
+    let pretty_filename = last @@ String.split_on_char '/' filename in
+    parsetree_of_string (load_file filename)
+    >>= type_with_init ~to_open:lib
     >>= fun r ->
-    let r = split_sequence_with hard_weight t @@ lambda_of_typedtree r in
-    ret r
-  in List.concat @@ filter_rev_map pred lst
+    ret @@
+      split_sequence_with hard_weight (lib ^ "." ^ pretty_filename) @@
+        lambda_of_typedtree r
+  in List.concat @@ filter_rev_map pred files_list
 
-let search hard_weight str_list =
-  let all_hashs = parse_all_implementations hard_weight str_list in
+let search hard_weight files_list =
+  let all_hashs = parse_all_implementations hard_weight files_list in
   Clustering.cluster all_hashs

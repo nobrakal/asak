@@ -7,6 +7,7 @@
 
 open Monad_error
 open Err
+open Utils
 
 open Parse_structure
 
@@ -69,11 +70,6 @@ let parse_all_implementations fun_name =
     >>= find_func fun_name
     >>= fun r -> ret (t,r)
   in filter_rev_map pred
-
-let rec last = function
-  | [] -> failwith "last"
-  | [x] -> x
-  | _::xs -> last xs
 
 let find_sol_type str fun_name =
   let found_type =
