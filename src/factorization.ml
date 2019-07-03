@@ -6,10 +6,10 @@
  * included LICENSE file for details. *)
 
 open Monad_error
-open Err
 open Utils
 
 open Parse_structure
+open ErrS
 
 let load_file f =
   let ic = open_in f in
@@ -31,11 +31,23 @@ let split_sequence_with hard_weight t =
     x::xs in
   let rec aux = function
     | Lambda.Lsequence (x,u) -> (add_name t x, hash x) :: aux u
+    | Lambda.Lapply ap -> List.concat @@ List.map aux ap.ap_args
     | x -> [add_name t x, hash x]
   in aux
 
+let filter_rev_map_print pred =
+  List.fold_left
+    (fun acc x ->
+      let name, x = pred x in
+      either
+        (fun s -> print_endline ("[" ^ name ^ "] Warning: " ^ s); acc)
+        (fun x -> x :: acc)
+        (run x))
+    []
+
 let parse_all_implementations hard_weight files_list =
   let pred (lib,filename) =
+    lib,
     let pretty_filename = last @@ String.split_on_char '/' filename in
     parsetree_of_string (load_file filename)
     >>= type_with_init ~to_open:lib
@@ -43,7 +55,7 @@ let parse_all_implementations hard_weight files_list =
     ret @@
       split_sequence_with hard_weight (lib ^ "." ^ pretty_filename) @@
         lambda_of_typedtree r
-  in List.concat @@ filter_rev_map pred files_list
+  in List.concat @@ filter_rev_map_print pred files_list
 
 let search hard_weight files_list =
   let all_hashs = parse_all_implementations hard_weight files_list in

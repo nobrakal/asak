@@ -99,8 +99,7 @@ let remove_fst_in_tree t =
 (* Compute a hierarchical cluster from data *)
 let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
   let rec aux res = function
-    | [] -> failwith "cluster, empty list"
-    | [a] -> a::res
+    | [] -> res
     | x::xs as lst ->
        match get_min_dist lst with
        | None -> aux (x::res) xs

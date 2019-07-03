@@ -6,7 +6,7 @@
  * included LICENSE file for details. *)
 
 open Monad_error
-open Err
+open ErrS
 open Utils
 
 open Parse_structure
@@ -47,7 +47,7 @@ let get_type_of_f_in_last f tree =
        end
     | _ -> acc
   in
-  List.fold_left aux fail tree.str_items
+  List.fold_left aux (fail @@ f ^ " not found") tree.str_items
 
 (* "Cut" a structure, with the last definition being the searched function *)
 let find_func f xs  =
@@ -62,14 +62,14 @@ let find_func f xs  =
        end
     | _ -> false
   in
-  to_err (take_until_last pred xs)
+  err_of_option "function not found" (take_until_last pred xs)
 
 let parse_all_implementations fun_name =
   let pred (t,save) =
     parsetree_of_string save
     >>= find_func fun_name
     >>= fun r -> ret (t,r)
-  in filter_rev_map pred
+  in filter_rev_map (fun x -> run @@ pred x)
 
 let find_sol_type str fun_name =
   let found_type =
@@ -78,8 +78,8 @@ let find_sol_type str fun_name =
     >>= type_with_init
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
-  | None -> failwith "Required function not implemented in solution"
-  | Some x -> x
+  | Left s -> failwith s
+  | Right x -> x
 
 (* Get the last element of a list of lambda expression *)
 let rec get_last_of_seq = function
@@ -104,12 +104,12 @@ let partition_FunExist sol_type fun_name =
       >>= fun x ->
       if eq_type sol_type x
       then ret (last lst, get_last_of_seq @@ lambda_of_typedtree t)
-      else fail in
+      else fail "bad type" in
     run tree in
   let aux (bad,good) (n,x) =
     match pred x with
-    | None -> (n::bad, good)
-    | Some x -> (bad, (n,x)::good)
+    | Left _ -> (n::bad, good)
+    | Right x -> (bad, (n,x)::good)
   in List.fold_left aux ([],[])
 
 let hm_part prof m =
