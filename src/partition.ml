@@ -78,7 +78,7 @@ let find_sol_type str fun_name =
     >>= type_with_init
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
-  | Left s -> failwith s
+  | Left s -> failwith ("Error in solution: " ^ s)
   | Right x -> x
 
 (* Get the last element of a list of lambda expression *)
@@ -93,7 +93,7 @@ let eq_type env t1 t2 =
 
 (* Partition the codes between those who have the function with
    the right name and the right type, and the others *)
-let partition_FunExist sol_type fun_name =
+let partition_funexist sol_type fun_name =
   let init_env = init_env () in
   let eq_type = eq_type init_env in
   let pred lst =
@@ -125,6 +125,6 @@ let hm_part prof m =
 let create prof fun_name sol codes =
   let codes = parse_all_implementations fun_name codes in
   let sol_type = find_sol_type fun_name sol in
-  let bad_type,funexist = partition_FunExist sol_type fun_name codes in
+  let bad_type,funexist = partition_funexist sol_type fun_name codes in
   let clusters = hm_part prof funexist in
   {bad_type; clusters}
