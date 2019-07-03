@@ -31,7 +31,6 @@ let split_sequence_with hard_weight t =
     x::xs in
   let rec aux = function
     | Lambda.Lsequence (x,u) -> (add_name t x, hash x) :: aux u
-    | Lambda.Lapply ap -> List.concat @@ List.map aux ap.ap_args
     | x -> [add_name t x, hash x]
   in aux
 
@@ -46,11 +45,14 @@ let filter_rev_map_print pred =
     []
 
 let parse_all_implementations hard_weight files_list =
-  let pred (lib,filename) =
+  let pred (must_open,lib,filename) =
     lib,
     let pretty_filename = last @@ String.split_on_char '/' filename in
     parsetree_of_string (load_file filename)
-    >>= type_with_init ~to_open:lib
+    >>=
+      (if must_open
+      then type_with_init ~to_open:lib
+      else type_with_init ?to_open:None)
     >>= fun r ->
     ret @@
       split_sequence_with hard_weight (lib ^ "." ^ pretty_filename) @@
