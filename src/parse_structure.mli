@@ -11,4 +11,5 @@ val parsetree_of_string : string -> Parsetree.structure ErrS.t
 
 val init_env : ?to_open:string -> unit -> Env.t
 val type_with_init : ?to_open:string -> Parsetree.structure -> Typedtree.structure ErrS.t
-val lambda_of_typedtree : Typedtree.structure -> Lambda.lambda
+
+val rev_lambdas_of_lst : string -> Typedtree.structure -> Lambda.lambda list

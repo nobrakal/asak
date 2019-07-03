@@ -43,7 +43,21 @@ let type_with_init ?to_open lst =
       (extract_typedtree @@ Typemod.type_structure (init_env ?to_open ()) lst Location.none)
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
-let lambda_of_typedtree lst =
+let lambda_of_typedtree name lst =
+  let prog = Translmod.transl_implementation name (lst, Typedtree.Tcoerce_none) in
   Lambda_utils.inline_all @@
-    Simplif.simplify_lambda "" @@
-      Translmod.transl_toplevel_definition lst
+    Simplif.simplify_lambda "" prog.Lambda.code
+
+let rev_lambdas_of_lst name structure =
+  let open Typedtree in
+  List.fold_left
+    (fun acc x ->
+      match x.str_desc with
+      | Tstr_value _ ->
+         begin
+           match lambda_of_typedtree name {structure with str_items=[x]} with
+           | Lambda.Lprim (_,xs,_) -> xs @ acc
+           | _ -> acc
+         end
+      | _ -> acc
+    ) [] structure.str_items

@@ -16,18 +16,6 @@ type 'a partition =
     clusters : 'a list Wtree.wtree list
   }
 
-let take_until_last p =
-  let rec aux = function
-  | [] -> None
-  | x::xs ->
-     match aux xs with
-     | None ->
-        if p x
-        then Some [x]
-        else None
-     | Some xs -> Some (x::xs)
-  in aux
-
 (* Search if a pattern has the right name *)
 let has_name f x =
   let open Typedtree in
@@ -49,42 +37,20 @@ let get_type_of_f_in_last f tree =
   in
   List.fold_left aux (fail @@ f ^ " not found") tree.str_items
 
-(* "Cut" a structure, with the last definition being the searched function *)
-let find_func f xs  =
-  let open Parsetree in
-  let pred c =
-    match c.pstr_desc with
-    | Pstr_value (_,(x::_)) ->
-       begin
-         match x.pvb_pat.ppat_desc with
-         | Ppat_var v -> Asttypes.(v.txt) = f
-         | _ -> false
-       end
-    | _ -> false
-  in
-  err_of_option "function not found" (take_until_last pred xs)
-
-let parse_all_implementations fun_name =
+let parse_all_implementations xs =
   let pred (t,save) =
     parsetree_of_string save
-    >>= find_func fun_name
     >>= fun r -> ret (t,r)
-  in filter_rev_map (fun x -> run @@ pred x)
+  in filter_rev_map (fun x -> run @@ pred x) xs
 
-let find_sol_type str fun_name =
+let find_sol_type fun_name str =
   let found_type =
     parsetree_of_string str
-    >>= find_func fun_name
     >>= type_with_init
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
   | Left s -> failwith ("Error in solution: " ^ s)
   | Right x -> x
-
-(* Get the last element of a list of lambda expression *)
-let rec get_last_of_seq = function
-  | Lambda.Lsequence (_,u) -> get_last_of_seq u
-  | x -> x
 
 (* Test if two types are "equal" *)
 let eq_type env t1 t2 =
@@ -103,7 +69,7 @@ let partition_funexist sol_type fun_name =
       get_type_of_f_in_last fun_name t
       >>= fun x ->
       if eq_type sol_type x
-      then ret (last lst, get_last_of_seq @@ lambda_of_typedtree t)
+      then ret (last lst, List.hd @@ rev_lambdas_of_lst "" t)
       else fail "bad type" in
     run tree in
   let aux (bad,good) (n,x) =
@@ -123,7 +89,7 @@ let hm_part prof m =
   Clustering.cluster lst
 
 let create prof fun_name sol codes =
-  let codes = parse_all_implementations fun_name codes in
+  let codes = parse_all_implementations codes in
   let sol_type = find_sol_type fun_name sol in
   let bad_type,funexist = partition_funexist sol_type fun_name codes in
   let clusters = hm_part prof funexist in

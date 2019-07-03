@@ -24,16 +24,6 @@ let find_name = function
 
 let add_name pref x = pref ^ "/" ^ find_name x
 
-let split_sequence_with hard_weight t =
-  let threshold = Lambda_utils.Hard hard_weight in
-  let hash x =
-    let (x,xs) = Lambda_utils.hash_lambda false threshold x in
-    x::xs in
-  let rec aux = function
-    | Lambda.Lsequence (x,u) -> (add_name t x, hash x) :: aux u
-    | x -> [add_name t x, hash x]
-  in aux
-
 let filter_rev_map_print pred =
   List.fold_left
     (fun acc x ->
@@ -43,6 +33,13 @@ let filter_rev_map_print pred =
         (fun x -> x :: acc)
         (run x))
     []
+
+let hash_all hard_weight t =
+  let threshold = Lambda_utils.Hard hard_weight in
+  let hash x =
+    let (x,xs) = Lambda_utils.hash_lambda false threshold x in
+    x::xs in
+  List.map (fun x -> (add_name t x, hash x) )
 
 let parse_all_implementations hard_weight files_list =
   let pred (must_open,lib,filename) =
@@ -55,8 +52,8 @@ let parse_all_implementations hard_weight files_list =
       else type_with_init ?to_open:None)
     >>= fun r ->
     ret @@
-      split_sequence_with hard_weight (lib ^ "." ^ pretty_filename) @@
-        lambda_of_typedtree r
+      hash_all hard_weight (lib ^ "." ^ pretty_filename) @@
+        rev_lambdas_of_lst lib r
   in List.concat @@ filter_rev_map_print pred files_list
 
 let search hard_weight files_list =
