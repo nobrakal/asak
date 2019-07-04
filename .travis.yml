@@ -1,7 +1,6 @@
 language: c
 sudo: required
-install: test -e .travis.opam.sh || wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
-script: bash -ex .travis-opam.sh
+
 env:
   - OCAML_VERSION=4.05
   - OCAML_VERSION=4.06
@@ -9,3 +8,19 @@ env:
   - OCAML_VERSION=4.08
 os:
   - linux
+
+install: test -e .travis.opam.sh || wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
+
+script:
+  - bash -ex .travis-opam.sh
+  - dune build @doc
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  keep_history: true
+  local_dir: _build/default/_doc/_html/
+  on:
+    branch: master
+    condition: "$OCAML_VERSION = 4.08"
