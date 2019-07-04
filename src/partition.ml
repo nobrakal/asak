@@ -12,7 +12,7 @@ open Parse_structure
 
 type 'a partition =
   { bad_type : 'a list;
-    clusters : (string * 'a list) Wtree.wtree list
+    clusters : ('a * string) list Wtree.wtree list
   }
 
 (* Search if a pattern has the right name *)
@@ -99,9 +99,12 @@ let add_impl_example m cluster =
   Wtree.fold_tree
     (fun a b c -> Node (a,b,c))
     (fun x ->
-      let fst = List.hd x in
-      let (_,(ref_impl,_)) = List.find (fun (t,_) -> t = fst) m in
-      Leaf (string_of_impl ref_impl, x)
+      Leaf
+        (List.map
+           (fun e ->
+             let (_,(ref_impl,_)) = List.find (fun (t,_) -> t = e) m in
+             (e, string_of_impl ref_impl)
+           ) x)
     )
     cluster
 
