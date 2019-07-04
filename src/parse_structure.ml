@@ -48,6 +48,47 @@ let lambda_of_typedtree name lst =
   Lambda_utils.inline_all @@
     Simplif.simplify_lambda "" prog.Lambda.code
 
+let lambda_of_expression expr =
+  Lambda_utils.inline_all @@
+    Simplif.simplify_lambda "" @@
+      Translcore.transl_exp expr
+
+let list_find_map f =
+  let aux acc x =
+    match acc with
+    | None -> f x
+    | _ -> acc
+  in List.fold_left aux None
+
+let get_specific_lambda_of_typedtree name structure =
+  let open Typedtree in
+  let pred_binding x =
+    match x.vb_pat.pat_desc with
+    | Tpat_var (_,v) ->
+       if Asttypes.(v.txt) = name
+       then Some x.vb_expr
+       else None
+    | _ -> None in
+  let pred x =
+    match x.str_desc with
+    | Tstr_value (_,xs) -> list_find_map pred_binding xs
+    | _ -> None in
+  match list_find_map pred structure.str_items with
+  | None -> fail "get_specific_lambda_of_typedtree: function not found"
+  | Some item -> ret @@ lambda_of_expression item
+
+let find_let_in_parsetree_items f =
+  let open Parsetree in
+  let pred_binding x =
+    match x.pvb_pat.ppat_desc with
+    | Ppat_var v -> Asttypes.(v.txt) = f
+    | _ -> false in
+  let pred x =
+    match x.pstr_desc with
+    | Pstr_value (_,xs) -> List.exists pred_binding xs
+    | _ -> false in
+  List.find_opt pred
+
 let rev_lambdas_of_lst name structure =
   let open Typedtree in
   List.fold_left

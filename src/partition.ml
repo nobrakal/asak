@@ -7,7 +7,6 @@
 
 open Monad_error
 open ErrS
-open Utils
 
 open Parse_structure
 
@@ -68,9 +67,13 @@ let partition_funexist sol_type fun_name =
       >>= fun t ->
       get_type_of_f_in_last fun_name t
       >>= fun x ->
-      if eq_type sol_type x
-      then ret (last lst, List.hd @@ rev_lambdas_of_lst "" t)
-      else fail "bad type" in
+      if not (eq_type sol_type x)
+      then
+        fail "bad type"
+      else
+        (get_specific_lambda_of_typedtree fun_name t
+        >>= fun lambda ->
+        ret (find_let_in_parsetree_items fun_name lst, lambda)) in
     run tree in
   let aux (bad,good) (n,x) =
     match pred x with

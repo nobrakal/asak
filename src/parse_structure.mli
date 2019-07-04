@@ -7,9 +7,22 @@
 
 open Monad_error
 
+(** If string is a valid OCaml code, return its parsetree *)
 val parsetree_of_string : string -> Parsetree.structure ErrS.t
 
+(** Initial typing envrionement, maybe with an other openened library *)
 val init_env : ?to_open:string -> unit -> Env.t
+
+(** Type a parsetree with the initial environement *)
 val type_with_init : ?to_open:string -> Parsetree.structure -> Typedtree.structure ErrS.t
 
+(** Extract a specific let binding in a typedtree,
+    and transform it in a lambda expression *)
+val get_specific_lambda_of_typedtree : string -> Typedtree.structure -> Lambda.lambda ErrS.t
+
+(** Find a specific toplevel let *)
+val find_let_in_parsetree_items :
+  string -> Parsetree.structure -> Parsetree.structure_item option
+
+(** Return all let bindings of a typedtree converted in lambda expressions *)
 val rev_lambdas_of_lst : string -> Typedtree.structure -> Lambda.lambda list
