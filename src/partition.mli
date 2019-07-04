@@ -10,10 +10,11 @@ type 'a partition =
   { bad_type : 'a list ;
     (** Keys identifying codes that either don't implement the searched function,
         or implement it with a bad type. *)
-    clusters : 'a list Wtree.wtree list;
+    clusters : (string * 'a list) Wtree.wtree list
     (** Main result.
         Each class is composed of a tree representing a hierarchical clustering of "similar codes".
-        Each leaf is a list of keys identifying "totally similar" codes.
+        Each leaf is a list of keys identifying "totally similar" codes, plus a string
+        with the code of a reference implementation.
 *)
   }
 

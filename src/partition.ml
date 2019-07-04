@@ -12,7 +12,7 @@ open Parse_structure
 
 type 'a partition =
   { bad_type : 'a list;
-    clusters : 'a list Wtree.wtree list
+    clusters : (string * 'a list) Wtree.wtree list
   }
 
 (* Search if a pattern has the right name *)
@@ -72,8 +72,10 @@ let partition_funexist sol_type fun_name =
         fail "bad type"
       else
         (get_specific_lambda_of_typedtree fun_name t
-        >>= fun lambda ->
-        ret (find_let_in_parsetree_items fun_name lst, lambda)) in
+         >>= fun lambda ->
+         match find_let_in_parsetree_items fun_name lst with
+         | None -> fail "cannot find function in parsetree"
+         | Some impl -> ret (impl, lambda)) in
     run tree in
   let aux (bad,good) (n,x) =
     match pred x with
@@ -91,9 +93,21 @@ let hm_part prof m =
       ) [] m in
   Clustering.cluster lst
 
+let add_impl_example m cluster =
+  let open Wtree in
+  let string_of_impl x = Pprintast.string_of_structure [x] in
+  Wtree.fold_tree
+    (fun a b c -> Node (a,b,c))
+    (fun x ->
+      let fst = List.hd x in
+      let (_,(ref_impl,_)) = List.find (fun (t,_) -> t = fst) m in
+      Leaf (string_of_impl ref_impl, x)
+    )
+    cluster
+
 let create prof fun_name sol codes =
   let codes = parse_all_implementations codes in
   let sol_type = find_sol_type fun_name sol in
   let bad_type,funexist = partition_funexist sol_type fun_name codes in
-  let clusters = hm_part prof funexist in
+  let clusters = List.map (add_impl_example funexist) @@ hm_part prof funexist in
   {bad_type; clusters}
