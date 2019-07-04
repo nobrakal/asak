@@ -39,8 +39,9 @@ let extract_typedtree =
 
 let type_with_init ?to_open lst =
   try
-    ret
-      (extract_typedtree @@ Typemod.type_structure (init_env ?to_open ()) lst Location.none)
+    ret @@
+      extract_typedtree @@
+        Typemod.type_structure (init_env ?to_open ()) lst Location.none
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
 let lambda_of_typedtree name lst =
