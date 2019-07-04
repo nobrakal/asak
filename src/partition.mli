@@ -18,9 +18,9 @@ type 'a partition =
 *)
   }
 
-(** Partition OCaml codes. Usage: [create threshold name sol list]
+(** Partition OCaml codes. Usage: [create threshold name sol list].
 
-    @param threshold Weight threshold required to keep sub-AST. It is a percentage
+    @param threshold Weight threshold required to keep a sub-AST. It is a percentage
 (a number between 0 and 100) of the weight of the whole AST.
 
 - A value of 0 means "keep all sub-ASTs"
