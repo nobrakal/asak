@@ -5,7 +5,9 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
-type threshold = Percent of int | Hard of int
+type threshold =
+  | Percent of int (** A percentage threshold, a number between 0 and 100. *)
+  | Hard of int (** A hard threshold. *)
 
 (** Hash a lambda expression. Usage: [hash_lambda will_sort threshold expr].
     Two lambda expressions "of the same shape" will share the same hash.
