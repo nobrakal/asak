@@ -22,5 +22,5 @@ val hash_lambda :
   -> Lambda.lambda
   -> (int*string) * (int*string) list
 
-(** Inline all possible (ie. without side effect) expressions in a lambda expression *)
+(** Inline all possible (ie. without side effect) expressions in a lambda expression. *)
 val inline_all : Lambda.lambda -> Lambda.lambda

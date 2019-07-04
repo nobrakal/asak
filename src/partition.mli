@@ -19,8 +19,9 @@ type 'a partition =
   }
 
 (** Partition OCaml codes. Usage: [create threshold name sol list]
-    @param threshold Weight threshold required to keep sub-AST. It is exprimed
-as percent (a number between 0 and 100) in term of the weight of the whole AST.
+
+    @param threshold Weight threshold required to keep sub-AST. It is a percentage
+(a number between 0 and 100) of the weight of the whole AST.
 
 - A value of 0 means "keep all sub-ASTs"
 - A value of 100 means "don't keep any sub-AST"
@@ -29,6 +30,8 @@ as percent (a number between 0 and 100) in term of the weight of the whole AST.
     @param sol A reference implementation, used only for typing.
     @param list List of valid OCaml codes (containing only toplevel definitions),
     using only the standard library, that may contains the searched function.
+
+    @return The partition.
 *)
 val create :
   int
