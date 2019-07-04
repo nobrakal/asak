@@ -7,7 +7,9 @@
 
 type threshold = Percent of int | Hard of int
 
-(** Hash a lambda expression. Usage: [hash_lambda will_sort threshold expr]
+(** Hash a lambda expression. Usage: [hash_lambda will_sort threshold expr].
+    Two lambda expressions "of the same shape" will share the same hash.
+
     @param will_sort If true, then all lists of hash will be sorted.
 This is useful to identify more codes, but can leads to some false-positive.
      @param threshold Used to decide which sub-AST's hash is kept.
