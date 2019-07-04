@@ -56,7 +56,6 @@ let max_option x y =
   | Some _ -> y
   | None ->  x
 
-(* Get the two closeset clusters *)
 let get_min_dist xs =
   let fmapfst = function
     | None -> None
@@ -76,12 +75,11 @@ let get_min_dist xs =
     )
     xs; !min
 
-(* Merge two elements of a cluster *)
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
   (Node (p,u,v))::xs
 
-(* Add x in a cluster, identified by his hash list xs *)
+(* Add x in a cluster, identified by its hash list xs *)
 let add_in_cluster x xs =
   let rec go = function
     | [] -> [(xs,[x])]
