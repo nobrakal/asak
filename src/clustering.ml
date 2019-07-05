@@ -35,7 +35,7 @@ let dist f =
     | Leaf (x,_), Leaf (y,_) ->
        let b,diff = symmetric_difference x y in
        if b
-       then Some (float_of_int @@ sum_of_fst diff)
+       then Some (sum_of_fst diff)
        else None
     | Node (_,u,v), l | l, Node (_,u,v) ->
        f (aux u l) (aux v l)

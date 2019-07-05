@@ -7,7 +7,7 @@
 
 (* Type for weighted trees *)
 type 'a wtree =
-  | Node of (float * 'a wtree * 'a wtree)
+  | Node of (int * 'a wtree * 'a wtree)
   | Leaf of 'a
 
 let fold_tree n l =
