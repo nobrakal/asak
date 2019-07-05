@@ -7,8 +7,32 @@
 
 open Wtree
 
-(* Return the symmetric difference of two _sorted_ lists *)
-(* Return also if the intersection was empty *)
+module Distance = struct
+
+  type t = Regular of int | Infinity
+
+  let compare x y =
+    match x with
+    | Infinity -> 1
+    | Regular x' ->
+       match y with
+       | Infinity -> -1
+       | Regular y' -> compare x' y'
+
+  let ( < ) x y =
+    compare x y = -1
+
+  let max x y =
+    if compare x y <= 0
+    then y
+    else x
+
+  let min x y =
+    if compare x y <= 0
+    then x
+    else y
+end
+
 let rec symmetric_difference x y =
   match x,y with
   | [],z|z,[] -> false,z
@@ -19,61 +43,47 @@ let rec symmetric_difference x y =
      else
        if xx > yy
        then let b,ndiff = symmetric_difference x ys in
-          b,yy::ndiff
+            b,yy::ndiff
        else let _,ndiff = symmetric_difference xs ys in
             true,ndiff
 
 let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
 
-(* NB: None is the biggest number *)
-
-(* Compute the distance between two clusters,
-   if there are Nodes, choose using f (max gives complete-linkage clustering) *)
-let dist f =
+let dist x y =
+  let open Distance in
   let rec aux x y =
     match x,y with
     | Leaf (x,_), Leaf (y,_) ->
        let b,diff = symmetric_difference x y in
        if b
-       then Some (sum_of_fst diff)
-       else None
+       then Regular (sum_of_fst diff)
+       else Infinity
     | Node (_,u,v), l | l, Node (_,u,v) ->
-       f (aux u l) (aux v l)
-  in aux
-
-let compare_option x y =
-  match x with
-  | None -> None
-  | Some x' ->
-     match y with
-     | None -> Some x'
-     | Some y' ->
-        if x' < y'
-        then Some x' else None
-
-let max_option x y =
-  match compare_option x y with
-  | Some _ -> y
-  | None ->  x
+       max (aux u l) (aux v l)
+  in aux x y
 
 let get_min_dist xs =
-  let fmapfst = function
-    | None -> None
-    | Some (x,_) -> Some x in
+  let choose_option d e =
+    let open Distance in function
+    | None -> (d,e)
+    | Some (old_d,old_e) ->
+       if d < old_d
+       then (d,e)
+       else (old_d,old_e) in
   let min = ref None in
   List.iter
     (fun x ->
       List.iter (fun y ->
           if x != y
           then
-            let d = dist max_option x y in
-            match compare_option d (fmapfst !min) with
-            | Some d -> min := Some (d,(x,y))
-            | None -> ();
+            min := Some (choose_option (dist x y) (x,y) !min)
         )
-     xs
-    )
-    xs; !min
+        xs
+    ) xs;
+  match !min with
+  | None -> failwith "get_min_dist"
+  | Some x -> x
+
 
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
@@ -96,12 +106,14 @@ let remove_fst_in_tree t =
 
 (* Compute a hierarchical cluster from data *)
 let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
-  let rec aux res = function
-    | [] -> res
-    | x::xs as lst ->
-       match get_min_dist lst with
-       | None -> aux (x::res) xs
-       | Some (p, (u,v)) -> aux res (merge p u v lst)
+  let rec aux = function
+    | [] -> []
+    | [x] -> [x]
+    | lst ->
+       let (p, (u,v)) = get_min_dist lst in
+       match p with
+       | Infinity -> lst
+       | Regular p -> aux (merge p u v lst)
   in
   let start =
     List.map (fun x -> Leaf x) @@
@@ -111,4 +123,4 @@ let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
   List.sort
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
     List.map remove_fst_in_tree @@
-      aux [] start
+      aux start
