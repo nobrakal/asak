@@ -61,15 +61,18 @@ let list_find_map f =
     | _ -> acc
   in List.fold_left aux None
 
+let has_name f x =
+  let open Typedtree in
+  match x.vb_pat.pat_desc with
+  | Tpat_var (_,v) -> Asttypes.(v.txt) = f
+  | _ -> false
+
 let get_specific_lambda_of_typedtree name structure =
   let open Typedtree in
   let pred_binding x =
-    match x.vb_pat.pat_desc with
-    | Tpat_var (_,v) ->
-       if Asttypes.(v.txt) = name
-       then Some x.vb_expr
-       else None
-    | _ -> None in
+    if has_name name x
+    then Some x.vb_expr
+    else None in
   let pred x =
     match x.str_desc with
     | Tstr_value (_,xs) -> list_find_map pred_binding xs

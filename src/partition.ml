@@ -15,13 +15,6 @@ type 'a partition =
     clusters : ('a * string) list Wtree.wtree list
   }
 
-(* Search if a pattern has the right name *)
-let has_name f x =
-  let open Typedtree in
-  match x.vb_pat.pat_desc with
-  | Tpat_var (_,v) -> Asttypes.(v.txt) = f
-  | _ -> false
-
 let get_type_of_f_in_last f tree =
   let open Typedtree in
   let aux acc x =
@@ -51,13 +44,10 @@ let find_sol_type fun_name str =
   | Error s -> failwith ("Error in solution: " ^ s)
   | Ok x -> x
 
-(* Test if two types are "equal" *)
 let eq_type env t1 t2 =
   try Ctype.unify env t1 t2; true with
   | Ctype.Unify _ -> false
 
-(* Partition the codes between those who have the function with
-   the right name and the right type, and the others *)
 let partition_funexist sol_type fun_name =
   let init_env = init_env () in
   let eq_type = eq_type init_env in

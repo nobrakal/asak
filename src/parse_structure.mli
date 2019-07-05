@@ -16,6 +16,9 @@ val init_env : ?to_open:string -> unit -> Env.t
 (** Typecheck a parsetree with the initial environement. *)
 val type_with_init : ?to_open:string -> Parsetree.structure -> Typedtree.structure ErrS.t
 
+(** Check if a [value_binding] is a variable with the given name. *)
+val has_name : string -> Typedtree.value_binding -> bool
+
 (** Extract a specific let binding in a typedtree,
     and transform it in a lambda expression. *)
 val get_specific_lambda_of_typedtree : string -> Typedtree.structure -> Lambda.lambda ErrS.t
