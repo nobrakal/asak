@@ -34,8 +34,8 @@ let filter_rev_map_print pred =
     (fun acc x ->
       let name, x = pred x in
       either
-        (fun s -> print_endline ("[" ^ name ^ "] Warning: " ^ s); acc)
         (fun x -> x :: acc)
+        (fun s -> print_endline ("[" ^ name ^ "] Warning: " ^ s); acc)
         (run x))
     []
 

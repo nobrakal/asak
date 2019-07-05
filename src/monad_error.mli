@@ -5,7 +5,7 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
-val either : ('a -> 'c) -> ('b -> 'c) -> ('b,'a) result -> 'c
+val either : ('a -> 'c) -> ('b -> 'c) -> ('a,'b) result -> 'c
 
 module type T = sig
   type e
@@ -39,4 +39,4 @@ module ErrS : sig
   val err_of_option : string -> 'a option -> 'a t
 end
 
-val filter_rev_map : ('a -> ('c,'b) result) -> 'a list -> 'c list
+val filter_rev_map : ('a -> ('b,'c) result) -> 'a list -> 'b list

@@ -6,8 +6,8 @@
  * included LICENSE file for details. *)
 
 let either f g = function
-  | Error x -> f x
-  | Ok    x -> g x
+  | Ok    x -> f x
+  | Error x -> g x
 
 module type T = sig
   type e
@@ -30,8 +30,8 @@ end = struct
   let fail e = Error e
   let ret x = Ok x
 
-  let map f = either fail (fun x -> ret (f x))
-  let ( >>= ) x f = either fail f x
+  let map f = either (fun x -> ret (f x)) fail
+  let ( >>= ) x f = either f fail x
 
   let run x = x
   let to_err x = x
@@ -43,4 +43,4 @@ end
 module ErrS = Make(struct type e = string end)
 
 let filter_rev_map f xs =
-  List.fold_left (fun acc x -> either (fun _ -> acc) (fun x -> x :: acc) @@ f x) [] xs
+  List.fold_left (fun acc x -> either (fun x -> x :: acc) (fun _ -> acc) @@ f x) [] xs
