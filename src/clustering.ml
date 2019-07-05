@@ -75,15 +75,13 @@ let get_min_dist xs =
     (fun x ->
       List.iter (fun y ->
           if x != y
-          then
-            min := Some (choose_option (dist x y) (x,y) !min)
+          then  min := Some (choose_option (dist x y) (x,y) !min)
         )
         xs
     ) xs;
   match !min with
   | None -> failwith "get_min_dist"
   | Some x -> x
-
 
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
@@ -104,7 +102,6 @@ let remove_fst_in_tree t =
     (fun p u v -> Node (p, u, v))
     (fun (_,x) -> Leaf x) t
 
-(* Compute a hierarchical cluster from data *)
 let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
   let rec aux = function
     | [] -> []

@@ -26,7 +26,8 @@ val symmetric_difference : 'a list -> 'a list -> bool * 'a list
 
 - If there is two {!Wtree.Leaf}, use the sum of the weight of the symmetric difference
   of their hash lists (or [Infinity] if the intersection was empty).
-- If there is a {!Wtree.Node}, use the {e maximum} of the distances between the sub-trees.
+- If there is a {!Wtree.Node}, use the {e maximum} of the distances between the sub-trees
+  and the other tree.
  *)
 val dist :
   ((int * string) list * 'b) wtree -> ((int * string) list * 'b) wtree

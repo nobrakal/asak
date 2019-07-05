@@ -5,7 +5,7 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
-(** Partition OCaml codes. Usage: [search threshold list]
+(** Partitioning OCaml codes. Usage: [search threshold list].
     @param threshold Weight threshold required to keep a sub-AST.
 
     @param list List of valid OCaml files, where each element is of the form

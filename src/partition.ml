@@ -48,8 +48,8 @@ let find_sol_type fun_name str =
     >>= type_with_init
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
-  | Left s -> failwith ("Error in solution: " ^ s)
-  | Right x -> x
+  | Error s -> failwith ("Error in solution: " ^ s)
+  | Ok x -> x
 
 (* Test if two types are "equal" *)
 let eq_type env t1 t2 =
@@ -79,8 +79,8 @@ let partition_funexist sol_type fun_name =
     run tree in
   let aux (bad,good) (n,x) =
     match pred x with
-    | Left _ -> (n::bad, good)
-    | Right x -> (bad, (n,x)::good)
+    | Error _ -> (n::bad, good)
+    | Ok x -> (bad, (n,x)::good)
   in List.fold_left aux ([],[])
 
 let hm_part prof m =
