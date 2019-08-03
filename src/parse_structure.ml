@@ -5,6 +5,8 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
+open Typedtree
+
 open Monad_error.ErrS
 
 let parsetree_of_string str =
@@ -49,6 +51,14 @@ let lambda_of_expression expr =
     Simplif.simplify_lambda "" @@
       Translcore.transl_exp expr
 
+let get_name_of_pat pat =
+  match pat.pat_desc with
+  | Tpat_var(id, _) -> Ident.name id
+  | Tpat_alias(_, id, _) -> Ident.name id
+  | _ -> "noname"
+
+let has_name f x = f = get_name_of_pat x.vb_pat
+
 let list_find_map f =
   let aux acc x =
     match acc with
@@ -56,14 +66,7 @@ let list_find_map f =
     | _ -> acc
   in List.fold_left aux None
 
-let has_name f x =
-  let open Typedtree in
-  match x.vb_pat.pat_desc with
-  | Tpat_var (_,v) -> Asttypes.(v.txt) = f
-  | _ -> false
-
 let get_specific_lambda_of_typedtree name structure =
-  let open Typedtree in
   let pred_binding x =
     if has_name name x
     then Some x.vb_expr
@@ -88,14 +91,6 @@ let find_let_in_parsetree_items f =
     | _ -> false in
   List.find_opt pred
 
-open Typedtree
-
-let get_name_of_pat pat =
-  match pat.pat_desc with
-  | Tpat_var(id, _) -> Ident.name id
-  | Tpat_alias(_, id, _) -> Ident.name id
-  | _ -> "noname"
-
 let rec read_module_expr prefix m =
   match m.mod_desc with
   | Tmod_structure structure -> read_structure prefix structure
@@ -103,7 +98,7 @@ let rec read_module_expr prefix m =
   | _ -> []
 
 and read_value_binding prefix x =
-  prefix ^ "." ^ get_name_of_pat x.vb_pat, Translcore.transl_exp x.vb_expr
+  prefix ^ "." ^ get_name_of_pat x.vb_pat, lambda_of_expression x.vb_expr
 
 and read_item_desc prefix x =
   let read_module_expr m =
