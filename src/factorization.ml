@@ -17,18 +17,6 @@ let load_file f =
   close_in ic;
   s
 
-let find_name x =
-  match x with
-  | Lambda.Llet (_,_,n,_,_) -> Some (Ident.name n)
-  | Lambda.Lletrec (xs,_) -> (* There is only one definition *)
-     Some (Ident.name @@ fst @@ List.hd xs)
-  | _ -> None
-
-let add_name pref x =
-  match find_name x with
-  | Some x -> Some (pref ^ "/" ^ x)
-  | None -> None
-
 let filter_rev_map_print pred =
   List.fold_left
     (fun acc x ->
@@ -39,27 +27,19 @@ let filter_rev_map_print pred =
         (run x))
     []
 
-let hash_all hard_weight t =
+let hash_all hard_weight =
   let open ErrS in
   let threshold = Lambda_utils.Hard hard_weight in
   let hash x =
     let (x,xs) = Lambda_utils.hash_lambda false threshold x in
     x::xs in
-  let hash_with_name x =
-    err_of_option "" (add_name t x)
-    >>= fun t -> ret (t, hash x)
-  in filter_rev_map
-       (fun x -> run (hash_with_name x))
-
-let rec last = function
-  | [] -> failwith "last"
-  | [x] -> x
-  | _::xs -> last xs
+  let hash_with_name (t,x) = ret (t, hash x) in
+  filter_rev_map
+    (fun x -> run (hash_with_name x))
 
 let parse_all_implementations hard_weight files_list =
   let pred (must_open,lib,filename) =
     lib,
-    let pretty_filename = last @@ String.split_on_char '/' filename in
     parsetree_of_string (load_file filename)
     >>=
       (if must_open
@@ -67,8 +47,8 @@ let parse_all_implementations hard_weight files_list =
       else type_with_init ?to_open:None)
     >>= fun r ->
     ret @@
-      hash_all hard_weight (lib ^ "." ^ pretty_filename) @@
-        rev_lambdas_of_lst lib r
+      hash_all hard_weight @@
+        read_structure lib r
   in List.concat @@ filter_rev_map_print pred files_list
 
 let search hard_weight files_list =

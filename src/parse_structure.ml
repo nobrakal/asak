@@ -44,11 +44,6 @@ let type_with_init ?to_open lst =
         Typemod.type_structure (init_env ?to_open ()) lst Location.none
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
-let lambda_of_typedtree name lst =
-  let prog = Translmod.transl_implementation name (lst, Typedtree.Tcoerce_none) in
-  Lambda_utils.inline_all @@
-    Simplif.simplify_lambda "" prog.Lambda.code
-
 let lambda_of_expression expr =
   Lambda_utils.inline_all @@
     Simplif.simplify_lambda "" @@
@@ -93,16 +88,34 @@ let find_let_in_parsetree_items f =
     | _ -> false in
   List.find_opt pred
 
-let rev_lambdas_of_lst name structure =
-  let open Typedtree in
-  List.fold_left
-    (fun acc x ->
-      match x.str_desc with
-      | Tstr_value _ ->
-         begin
-           match lambda_of_typedtree name {structure with str_items=[x]} with
-           | Lambda.Lprim (_,xs,_) -> xs @ acc
-           | _ -> acc
-         end
-      | _ -> acc
-    ) [] structure.str_items
+open Typedtree
+
+let get_name_of_pat pat =
+  match pat.pat_desc with
+  | Tpat_var(id, _) -> Ident.name id
+  | Tpat_alias(_, id, _) -> Ident.name id
+  | _ -> "noname"
+
+let rec read_module_expr prefix m =
+  match m.mod_desc with
+  | Tmod_structure structure -> read_structure prefix structure
+  | Tmod_functor (_,_,_,m) -> read_module_expr prefix m
+  | _ -> []
+
+and read_value_binding prefix x =
+  prefix ^ "." ^ get_name_of_pat x.vb_pat, Translcore.transl_exp x.vb_expr
+
+and read_item_desc prefix x =
+  let read_module_expr m =
+     read_module_expr (prefix ^ "." ^ Ident.name m.mb_id) m.mb_expr in
+  match x.str_desc with
+  | Tstr_value (_,xs) -> List.map (read_value_binding prefix) xs
+  | Tstr_module m -> read_module_expr m
+  | Tstr_recmodule xs ->
+     List.flatten @@
+       List.map read_module_expr xs
+  | _ -> []
+
+and read_structure prefix structure =
+  List.flatten @@
+    List.map (read_item_desc prefix) structure.str_items
