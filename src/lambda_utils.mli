@@ -28,6 +28,3 @@ val hash_lambda :
 
 (** Inline all possible (ie. without side effect) expressions in a lambda expression. *)
 val inline_all : Lambda.lambda -> Lambda.lambda
-
-(** When two applications are composed, make only one. *)
-val apply_full : Lambda.lambda -> Lambda.lambda

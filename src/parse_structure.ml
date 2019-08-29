@@ -47,10 +47,9 @@ let type_with_init ?to_open lst =
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
 let lambda_of_expression expr =
-  Lambda_utils.apply_full @@
-    Lambda_utils.inline_all @@
-      Simplif.simplify_lambda "" @@
-        Translcore.transl_exp expr
+  Lambda_utils.inline_all @@
+    Simplif.simplify_lambda "" @@
+      Translcore.transl_exp expr
 
 let get_name_of_pat pat =
   match pat.pat_desc with

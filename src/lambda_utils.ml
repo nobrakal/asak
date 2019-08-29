@@ -174,13 +174,7 @@ let hash_lambda is_sorting threshold l =
   let fmain_weight = float_of_int main_weight in
   (main_weight,h), sort_filter is_sorting threshold fmain_weight ss_arbres
 
-let lapply aux x =
-  let ap_func = aux x.ap_func in
-  let ap_args = List.map aux x.ap_args in
-  {x with ap_func; ap_args }
-
-(* For INTERNAL USE *)
-let fold_lambda lvar llet lapply =
+let fold_lambda lvar llet =
   let rec aux expr =
     let insnd lst = List.map (fun (e,x) -> e, aux x) lst in
     let inopt = function
@@ -191,7 +185,10 @@ let fold_lambda lvar llet lapply =
     | Lconst _ -> expr
     | Llet (k,e,ident,l,r) ->
        llet aux k e ident l r
-  | Lapply x -> Lapply (lapply aux x)
+  | Lapply x ->
+     let ap_func = aux x.ap_func in
+     let ap_args = List.map aux x.ap_args in
+     Lapply {x with ap_func; ap_args }
   | Lfunction x ->
      let body = aux x.body in
      Lfunction {x with body}
@@ -243,72 +240,17 @@ let replace ident body =
     then body
     else Lvar x in
   let llet aux a b c d e = Llet (a,b,c,aux d,aux e) in
-  fold_lambda lvar llet lapply
-
-(* TODO check validity *)
-let appears_only_once name lambda =
-  let sum_map f = List.fold_left (fun x y -> x + f y) 0 in
-  let rec aux =
-    function
-    | Lvar x -> if x = name then 1 else 0
-    | Lconst _ -> 0
-    | Llet (_,_,_,l,r) ->
-       (aux l) + (aux r)
-    | Lapply x ->
-       let ap_func = aux x.ap_func in
-       let ap_args = sum_map aux x.ap_args in
-       ap_func + ap_args
-    | Lfunction x -> aux x.body
-    | Lletrec (lst,l) ->
-       sum_map (fun (_,x) -> aux x) lst + aux l
-    | Lprim (_,lst,_) -> sum_map aux lst
-    | Lstaticraise (_,lst) ->
-        sum_map aux lst
-    | Lifthenelse (i,f,e) ->
-       aux i + aux f + aux e
-    | Lsequence (l,r) ->
-       aux l + aux r
-    | Lwhile (l,r) ->
-       aux l + aux r
-    | Lifused (_,l) ->
-       aux l
-         #if OCAML_VERSION >= (4, 06, 0)
-    | Lswitch (l,s,_) ->
-       let sw_consts = sum_map (fun (_,x) -> aux x) s.sw_consts in
-       let sw_blocks = sum_map (fun (_,x) -> aux x) s.sw_blocks in
-       aux l + sw_consts + sw_blocks
-         #else
-    | Lswitch (l,s) ->
-       let sw_consts = sum_map (fun (_,x) -> aux x) s.sw_consts in
-       let sw_blocks = sum_map (fun (_,x) -> aux x) s.sw_blocks in
-       aux l + sw_consts + sw_blocks
-         #endif
-    | Lstringswitch (l,lst,opt,_) ->
-       aux l + sum_map (fun (_,x) -> aux x) lst + (function None -> 0 | Some x -> aux x) opt
-    | Lassign (_,l) ->
-       aux l
-    | Levent (l,_) ->
-       aux l
-    | Lstaticcatch (l,_,r) ->
-       aux l + aux r
-    | Ltrywith (l,_,r) ->
-       aux l + aux r
-    | Lfor (_,a,b,_,c) ->
-       aux a + aux b + aux c
-    | Lsend (_,b,c,d,_) ->
-       aux b + aux c + sum_map aux d
-  in
-  aux lambda <= 1
+  fold_lambda lvar llet
 
 (* Is the definition inlineable ? *)
-let inlineable name l r =
-  function
+let inlineable x f =
+  match x with
   | Alias -> true
   | Strict ->
      begin
-       match l with
+       match f with
        | Lvar _ | Lconst _ -> true
-       | _ -> appears_only_once name r
+       | _ -> false
      end
   | _  -> false
 
@@ -317,19 +259,9 @@ let inlineable name l r =
 let inline_all =
   let lvar x = Lvar x in
   let llet aux k e ident l r =
-    if inlineable ident l r k
+    if inlineable k l
     then
       aux (replace ident l r)
     else
       Llet (k, e, ident, aux l, aux r) in
-  fold_lambda lvar llet lapply
-
-let apply_full =
-  let lvar x = Lvar x in
-  let llet aux k e ident l r = Llet (k, e, ident, aux l, aux r) in
-  let lapply' aux x =
-    let x = lapply aux x in
-    match x.ap_func with
-    | Lapply y -> {y with ap_args = y.ap_args @ x.ap_args}
-    | _ -> x in
-  fold_lambda lvar llet lapply'
+  fold_lambda lvar llet
