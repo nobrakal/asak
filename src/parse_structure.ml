@@ -9,6 +9,13 @@ open Typedtree
 
 open Monad_error.ErrS
 
+let filter_map f xs =
+  let aux x acc =
+    match f x with
+    | None -> acc
+    | Some x -> x::acc
+  in List.fold_right aux xs []
+
 let parsetree_of_string str =
   try
     let without_directives =
@@ -53,11 +60,14 @@ let lambda_of_expression expr =
 
 let get_name_of_pat pat =
   match pat.pat_desc with
-  | Tpat_var(id, _) -> Ident.name id
-  | Tpat_alias(_, id, _) -> Ident.name id
-  | _ -> "noname"
+  | Tpat_var(id, _) -> Some id
+  | Tpat_alias(_, id, _) -> Some id
+  | _ -> None
 
-let has_name f x = f = get_name_of_pat x.vb_pat
+let has_name f x =
+  match get_name_of_pat x.vb_pat with
+  | None -> false
+  | Some id -> Ident.name id = f
 
 let list_find_map f =
   let aux acc x =
@@ -98,13 +108,16 @@ let rec read_module_expr prefix m =
   | _ -> []
 
 and read_value_binding prefix x =
-  prefix ^ "." ^ get_name_of_pat x.vb_pat, lambda_of_expression x.vb_expr
+  match get_name_of_pat x.vb_pat with
+  | Some name -> Some
+     (prefix ^ "." ^ (Ident.name name), name, lambda_of_expression x.vb_expr)
+  | None -> None
 
 and read_item_desc prefix x =
   let read_module_expr m =
      read_module_expr (prefix ^ "." ^ Ident.name m.mb_id) m.mb_expr in
   match x.str_desc with
-  | Tstr_value (_,xs) -> List.map (read_value_binding prefix) xs
+  | Tstr_value (_,xs) -> filter_map (read_value_binding prefix) xs
   | Tstr_module m -> read_module_expr m
   | Tstr_recmodule xs ->
      List.flatten @@

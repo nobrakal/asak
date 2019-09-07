@@ -28,4 +28,4 @@ val find_let_in_parsetree_items :
   string -> Parsetree.structure -> Parsetree.structure_item option
 
 (** Return all let bindings of a typedtree converted in lambda expressions. *)
-val read_structure : string -> Typedtree.structure -> (string * Lambda.lambda) list
+val read_structure : string -> Typedtree.structure -> (string * Ident.t * Lambda.lambda) list

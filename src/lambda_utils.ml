@@ -72,11 +72,11 @@ let hash_lambda is_sorting =
     let hash_lambda' = hash_lambda letbinds in
   match x with
   | Lvar x ->
-       begin
-         match List.assoc_opt x letbinds with
-         | None -> h1 "Lvar"
-         | Some x' -> h1' x'
-       end
+     begin
+       match List.assoc_opt x letbinds with
+       | None -> h1 "Lvar"
+       | Some x' -> h1' x'
+     end
   | Lconst _ -> h1 "Lconst"
   | Lapply x ->
      hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
@@ -169,7 +169,7 @@ let hash_lambda is_sorting =
        ; hash_lambda' b
        ; hash_lst_anon hash_lambda' xs
        ]
-  in hash_lambda []
+  in hash_lambda
 
 let sort_filter is_sorting threshold main_weight xs =
   let pred =
@@ -181,8 +181,8 @@ let sort_filter is_sorting threshold main_weight xs =
   then List.sort compare filtered
   else filtered
 
-let hash_lambda is_sorting threshold l =
-  let main_weight,ss_arbres,h = hash_lambda is_sorting l in
+let hash_lambda is_sorting threshold letbindings l =
+  let main_weight,ss_arbres,h = hash_lambda is_sorting letbindings l in
   let fmain_weight = float_of_int main_weight in
   (main_weight,h), sort_filter is_sorting threshold fmain_weight ss_arbres
 
@@ -192,11 +192,11 @@ let fold_lambda lvar llet =
     let inopt = function
     | None -> None
     | Some x -> Some (aux x) in
-    match expr with
-    | Lvar x -> lvar x
-    | Lconst _ -> expr
-    | Llet (k,e,ident,l,r) ->
-       llet aux k e ident l r
+  match expr with
+  | Lvar x -> lvar x
+  | Lconst _ -> expr
+  | Llet (k,e,ident,l,r) ->
+     llet aux k e ident l r
   | Lapply x ->
      let ap_func = aux x.ap_func in
      let ap_args = List.map aux x.ap_args in
