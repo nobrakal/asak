@@ -127,3 +127,9 @@ and read_item_desc prefix x =
 and read_structure prefix structure =
   List.flatten @@
     List.map (read_item_desc prefix) structure.str_items
+
+let read_string str =
+  let t = parsetree_of_string str >>= type_with_init in
+  match run t with
+  | Error e -> failwith e
+  | Ok t -> read_structure "" t

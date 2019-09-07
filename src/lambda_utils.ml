@@ -186,6 +186,20 @@ let hash_lambda is_sorting threshold letbindings l =
   let fmain_weight = float_of_int main_weight in
   (main_weight,h), sort_filter is_sorting threshold fmain_weight ss_arbres
 
+let hash_all hard_weight xs =
+  let threshold = Hard hard_weight in
+  let (_,all_hashs) =
+    List.fold_right
+      (fun (name_prefixed,id,x) (letbinds,acc) ->
+        let (main_hash,leaves_hashs) = hash_lambda false threshold letbinds x in
+        (id,snd main_hash)::letbinds,(name_prefixed, main_hash::leaves_hashs)::acc
+      )
+      xs
+      ([],[])
+  in all_hashs
+
+let escape_hash_list xs = List.map (fun (name,xs) -> name,List.map (fun (p,h) -> p,String.escaped h) xs) xs
+
 let fold_lambda lvar llet =
   let rec aux expr =
     let insnd lst = List.map (fun (e,x) -> e, aux x) lst in

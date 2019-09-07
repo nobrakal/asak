@@ -31,5 +31,12 @@ val hash_lambda :
   -> Lambda.lambda
   -> (int*string) * (int*string) list
 
+(** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }.
+*)
+val hash_all : int -> ('a * Ident.t * Lambda.lambda) list -> ('a * (int * string) list) list
+
+(** Escape hashs. *)
+val escape_hash_list : ('a * (int * string) list) list -> ('a * (int * string) list) list
+
 (** Inline all possible (ie. without side effect) expressions in a lambda expression. *)
 val inline_all : Lambda.lambda -> Lambda.lambda

@@ -27,18 +27,6 @@ let filter_rev_map_print pred =
         (run x))
     []
 
-let hash_all hard_weight xs =
-  let threshold = Lambda_utils.Hard hard_weight in
-  let (_,all_hashs) =
-    List.fold_right
-      (fun (name_prefixed,id,x) (letbinds,acc) ->
-        let (main_hash,leaves_hashs) = Lambda_utils.hash_lambda false threshold letbinds x in
-        (id,snd main_hash)::letbinds,(name_prefixed, main_hash::leaves_hashs)::acc
-      )
-      xs
-      ([],[])
-  in all_hashs
-
 let parse_all_implementations hard_weight files_list =
   let pred (must_open,lib,filename) =
     lib,
@@ -49,7 +37,7 @@ let parse_all_implementations hard_weight files_list =
       else type_with_init ?to_open:None)
     >>= fun r ->
     ret @@
-      hash_all hard_weight @@
+      Lambda_utils.hash_all hard_weight @@
         read_structure lib r
   in List.concat @@ filter_rev_map_print pred files_list
 
