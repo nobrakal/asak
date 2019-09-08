@@ -7,6 +7,8 @@
 
 open Wtree
 
+let compare_snd (_,x) (_,y) = compare x y
+
 module Distance = struct
 
   type t = Regular of int | Infinity
@@ -33,19 +35,23 @@ module Distance = struct
     else y
 end
 
-let rec symmetric_difference x y =
-  match x,y with
-  | [],z|z,[] -> false,z
-  | xx::xs,yy::ys ->
-     if xx < yy
-     then let b,ndiff = symmetric_difference xs y in
+let symmetric_difference cmp =
+  let rec aux x y =
+    match x,y with
+    | [],z|z,[] -> false,z
+    | xx::xs,yy::ys ->
+       match cmp xx yy with
+       | (-1) ->
+          let b,ndiff = aux xs y in
           b,xx::ndiff
-     else
-       if xx > yy
-       then let b,ndiff = symmetric_difference x ys in
-            b,yy::ndiff
-       else let _,ndiff = symmetric_difference xs ys in
-            true,ndiff
+       | 0 ->
+          let _,ndiff = aux xs ys in
+          true,ndiff
+       | 1 ->
+          let b,ndiff = aux x ys in
+          b,yy::ndiff
+       | _ -> failwith "symmetric_difference"
+  in aux
 
 let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
 
@@ -54,7 +60,7 @@ let dist x y =
   let rec aux x y =
     match x,y with
     | Leaf (x,_), Leaf (y,_) ->
-       let b,diff = symmetric_difference x y in
+       let b,diff = symmetric_difference compare_snd x y in
        if b
        then Regular (sum_of_fst diff)
        else Infinity
@@ -115,7 +121,7 @@ let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
   let start =
     List.map (fun x -> Leaf x) @@
       List.fold_left
-        (fun acc (x,xs) -> add_in_cluster x (List.sort compare xs) acc) [] m
+        (fun acc (x,xs) -> add_in_cluster x (List.sort compare_snd xs) acc) [] m
   in
   List.sort
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@

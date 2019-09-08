@@ -18,9 +18,9 @@ module Distance : sig
 
 end
 
-(** Compute the symmetric difference of two {e sorted} lists.
+(** Compute the symmetric difference of two {e sorted} lists (using the given order).
     Return also if the intersection was not empty. *)
-val symmetric_difference : 'a list -> 'a list -> bool * 'a list
+val symmetric_difference : ('a -> 'a -> int) -> 'a list -> 'a list -> bool * 'a list
 
 (** Compute recursively the distance between two clusters:
 
