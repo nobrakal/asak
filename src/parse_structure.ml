@@ -16,6 +16,13 @@ let filter_map f xs =
     | Some x -> x::acc
   in List.fold_right aux xs []
 
+let init_path () =
+#if OCAML_VERSION >= (4, 09, 0)
+   Compmisc.init_path ()
+#else
+   Compmisc.init_path true
+#endif
+
 let parsetree_of_string str =
   try
     let without_directives =
@@ -33,7 +40,7 @@ let init_env ?to_open () =
     match to_open with
     | None -> ()
     | Some x -> Clflags.open_modules := x::!Clflags.open_modules in
-  Compmisc.init_path true;
+  init_path ();
   update_opened ();
   let env = Compmisc.initial_env () in
   Clflags.open_modules := old_modules;
@@ -53,9 +60,16 @@ let type_with_init ?to_open lst =
         Typemod.type_structure (init_env ?to_open ()) lst Location.none
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
+let simplify_lambda lambda =
+#if OCAML_VERSION >= (4, 09, 0)
+  Simplif.simplify_lambda lambda
+#else
+  Simplif.simplify_lambda "" lambda
+#endif
+
 let lambda_of_expression expr =
   Lambda_utils.inline_all @@
-    Simplif.simplify_lambda "" @@
+    simplify_lambda @@
       Translcore.transl_exp expr
 
 let get_name_of_pat pat =
