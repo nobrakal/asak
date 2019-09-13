@@ -127,3 +127,25 @@ let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
     List.map remove_fst_in_tree @@
       aux start
+
+let print_cluster show cluster =
+  let rec aux i = function
+    | Leaf x ->
+       begin
+         print_string (String.make i ' ');
+         List.iter (fun x -> print_string (show x ^ " ")) x;
+         print_endline "";
+       end
+    | Node (w,x,y) ->
+       begin
+         print_string (String.make i ' ');
+         print_string ("Node " ^ string_of_int w ^":");
+         print_endline "";
+         aux (i+1) x;
+         aux (i+1) y
+       end
+  in
+  let pclass i x =
+    print_endline ("Class " ^ string_of_int i ^ ":");
+    aux 1 x
+  in List.iteri pclass cluster
