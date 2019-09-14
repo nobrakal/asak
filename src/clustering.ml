@@ -93,36 +93,36 @@ let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
   (Node (p,u,v))::xs
 
+module Elem = struct
+  type t = (int * string) list
+  let compare = compare
+end
+
+module Cluster = Map.Make(Elem)
+
 (* Add x in a cluster, identified by its hash list xs *)
-let add_in_cluster x xs =
-  let rec go = function
-    | [] -> [(xs,[x])]
-    | ((us,ys) as e)::zs ->
-       if us = xs
-       then (us,x::ys)::zs
-       else e::go zs
-  in go
+let add_in_cluster map (x,xs) =
+  match Cluster.find_opt xs map with
+  | None -> Cluster.add xs [x] map
+  | Some ys -> Cluster.add xs (x::ys) map
 
 let remove_fst_in_tree t =
   fold_tree
     (fun p u v -> Node (p, u, v))
     (fun (_,x) -> Leaf x) t
 
-let cluster (m : ('a * (int * string) list) list) : ('a list) wtree list =
+let cluster (hash_list : ('a * (int * string) list) list) =
   let rec aux = function
     | [] -> []
     | [x] -> [x]
     | lst ->
-       let (p, (u,v)) = get_min_dist lst in
-       match p with
-       | Infinity -> lst
-       | Regular p -> aux (merge p u v lst)
-  in
+        let (p, (u,v)) = get_min_dist lst in
+        match p with
+        | Infinity -> lst
+        | Regular p -> aux (merge p u v lst) in
   let start =
-    List.map (fun x -> Leaf x) @@
-      List.fold_left
-        (fun acc (x,xs) -> add_in_cluster x (List.sort compare_snd xs) acc) [] m
-  in
+    let cluster = List.fold_left add_in_cluster Cluster.empty hash_list in
+    Cluster.fold (fun k xs acc -> Leaf (k, xs)::acc) cluster [] in
   List.sort
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
     List.map remove_fst_in_tree @@
