@@ -28,10 +28,14 @@ val symmetric_difference : ('a -> 'a -> int) -> 'a list -> 'a list -> bool * 'a 
   of their hash lists (or [Infinity] if the intersection was empty).
 - If there is a {!Wtree.Node}, use the {e maximum} of the distances between the sub-trees
   and the other tree.
+
+The first argument must be an equivalent of {!symmetric_difference}. It is guaranteed that
+its arguments will be in ascending order.
  *)
 val dist :
-  ((int * string) list * 'b) wtree -> ((int * string) list * 'b) wtree
-  -> Distance.t
+  ((int * string) list -> (int * string) list -> bool * (int * string) list) ->
+  ((int * string) list * 'b) Wtree.wtree ->
+  ((int * string) list * 'b) Wtree.wtree -> Distance.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
     clustering using {!dist}.

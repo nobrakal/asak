@@ -53,14 +53,29 @@ let symmetric_difference cmp =
        | _ -> failwith "symmetric_difference"
   in aux
 
+(* NB: the returned hashtable contains only keys (x,y) where x < y.
+   This is not a problem since the distance is symmetric.
+ *)
+let compute_all_sym_diff xs =
+  let len = List.length xs in
+  let res = Hashtbl.create (len * len) in
+  let aux (x,_) (y,_) =
+    if x < y
+    then
+      Hashtbl.add res (x,y) (symmetric_difference compare_snd x y)
+    else ()
+  in
+  List.iter (fun x -> List.iter (fun y -> aux x y) xs) xs;
+  res
+
 let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
 
-let dist x y =
+let dist get_symmetric_diff x y =
   let open Distance in
   let rec aux x y =
     match x,y with
     | Leaf (x,_), Leaf (y,_) ->
-       let b,diff = symmetric_difference compare_snd x y in
+       let b,diff = get_symmetric_diff x y in
        if b
        then Regular (sum_of_fst diff)
        else Infinity
@@ -68,7 +83,7 @@ let dist x y =
        max (aux u l) (aux v l)
   in aux x y
 
-let get_min_dist xs =
+let get_min_dist get_symmetric_diff xs =
   let choose_option d e =
     let open Distance in function
     | None -> (d,e)
@@ -81,9 +96,9 @@ let get_min_dist xs =
     (fun x ->
       List.iter (fun y ->
           if x != y
-          then  min := Some (choose_option (dist x y) (x,y) !min)
-        )
-        xs
+          then
+            min := Some (choose_option (dist get_symmetric_diff x y) (x,y) !min)
+        ) xs
     ) xs;
   match !min with
   | None -> failwith "get_min_dist"
@@ -112,17 +127,23 @@ let remove_fst_in_tree t =
     (fun (_,x) -> Leaf x) t
 
 let cluster (hash_list : ('a * (int * string) list) list) =
+  let start =
+    let cluster = List.fold_left add_in_cluster Cluster.empty hash_list in
+    Cluster.fold (fun k xs acc -> (k, xs)::acc) cluster [] in
+  let tbl = compute_all_sym_diff start in
+  let get_symmetric_diff x y =
+    if x < y
+    then Hashtbl.find tbl (x,y)
+    else Hashtbl.find tbl (y,x) in
+  let start = List.map (fun x -> Leaf x) start in
   let rec aux = function
     | [] -> []
     | [x] -> [x]
     | lst ->
-        let (p, (u,v)) = get_min_dist lst in
-        match p with
-        | Infinity -> lst
-        | Regular p -> aux (merge p u v lst) in
-  let start =
-    let cluster = List.fold_left add_in_cluster Cluster.empty hash_list in
-    Cluster.fold (fun k xs acc -> Leaf (k, xs)::acc) cluster [] in
+       let (p, (u,v)) = get_min_dist get_symmetric_diff lst in
+       match p with
+       | Infinity -> lst
+       | Regular p -> aux (merge p u v lst) in
   List.sort
     (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
     List.map remove_fst_in_tree @@
