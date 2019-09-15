@@ -35,7 +35,7 @@ module Distance = struct
     else y
 end
 
-let symmetric_difference cmp =
+let symmetric_difference cmp x y =
   let rec aux x y =
     match x,y with
     | [],z|z,[] -> false,z
@@ -51,39 +51,53 @@ let symmetric_difference cmp =
           let b,ndiff = aux x ys in
           b,yy::ndiff
        | _ -> failwith "symmetric_difference"
-  in aux
+  in
+  let b,res = aux x y in
+  if b
+  then Some res
+  else None
+
+let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
+
+let semimetric cmp x y =
+  let open Distance in
+  match symmetric_difference cmp x y with
+  | None -> Infinity
+  | Some diff -> Regular (sum_of_fst diff)
 
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
  *)
 let compute_all_sym_diff xs =
   let len = List.length xs in
-  let res = Hashtbl.create (len * len) in
+  let res = Hashtbl.create len in
+  let was_seen = Hashtbl.create len in
+  let update_was_seen x y =
+    Hashtbl.add was_seen x ();
+    Hashtbl.add was_seen y (); in
   let aux (x,_) (y,_) =
     if x < y
     then
-      Hashtbl.add res (x,y) (symmetric_difference compare_snd x y)
+      match semimetric compare_snd x y with
+      | Infinity -> ()
+      | Regular dist ->
+         update_was_seen x y;
+         Hashtbl.add res (x,y) dist
     else ()
   in
   List.iter (fun x -> List.iter (fun y -> aux x y) xs) xs;
-  res
+  was_seen,res
 
-let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
-
-let dist get_symmetric_diff x y =
+let dist get_semimetric x y =
   let open Distance in
   let rec aux x y =
     match x,y with
-    | Leaf (x,_), Leaf (y,_) ->
-       let b,diff = get_symmetric_diff x y in
-       if b
-       then Regular (sum_of_fst diff)
-       else Infinity
     | Node (_,u,v), l | l, Node (_,u,v) ->
        max (aux u l) (aux v l)
+    | Leaf (x,_), Leaf (y,_) -> get_semimetric x y
   in aux x y
 
-let get_min_dist get_symmetric_diff xs =
+let get_min_dist get_semimetric xs =
   let choose_option d e =
     let open Distance in function
     | None -> (d,e)
@@ -97,7 +111,7 @@ let get_min_dist get_symmetric_diff xs =
       List.iter (fun y ->
           if x != y
           then
-            min := Some (choose_option (dist get_symmetric_diff x y) (x,y) !min)
+            min := Some (choose_option (dist get_semimetric x y) (x,y) !min)
         ) xs
     ) xs;
   match !min with
@@ -126,28 +140,43 @@ let remove_fst_in_tree t =
     (fun p u v -> Node (p, u, v))
     (fun (_,x) -> Leaf x) t
 
+let partition_map f g p l =
+  let rec part yes no = function
+  | [] -> (yes, no)
+  | x :: l ->
+     if p x then part (f x :: yes) no l else part yes (g x :: no) l in
+  part [] [] l
+
 let cluster (hash_list : ('a * (int * string) list) list) =
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty hash_list in
     Cluster.fold (fun k xs acc -> (k, xs)::acc) cluster [] in
-  let tbl = compute_all_sym_diff start in
-  let get_symmetric_diff x y =
-    if x < y
-    then Hashtbl.find tbl (x,y)
-    else Hashtbl.find tbl (y,x) in
-  let start = List.map (fun x -> Leaf x) start in
+  let was_seen,tbl = compute_all_sym_diff start in
+  let get_semimetric x y =
+    try
+      let value =
+        if x < y
+        then Hashtbl.find tbl (x,y)
+        else Hashtbl.find tbl (y,x) in
+      Distance.Regular value
+    with Not_found -> Distance.Infinity in
+  let (start, alone) =
+    partition_map
+      (fun x -> Leaf x) (fun (_,x) -> Leaf x) (fun (x,_) -> Hashtbl.mem was_seen x) start in
   let rec aux = function
     | [] -> []
     | [x] -> [x]
     | lst ->
-       let (p, (u,v)) = get_min_dist get_symmetric_diff lst in
+       let (p, (u,v)) = get_min_dist get_semimetric lst in
        match p with
        | Infinity -> lst
        | Regular p -> aux (merge p u v lst) in
-  List.sort
-    (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
-    List.map remove_fst_in_tree @@
-      aux start
+  let cluster =
+    List.sort
+      (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
+      List.map remove_fst_in_tree @@
+        aux start in
+  cluster @ alone
 
 let print_cluster show cluster =
   let rec aux i = function
