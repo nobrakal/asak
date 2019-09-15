@@ -97,26 +97,19 @@ let dist get_semimetric x y =
     | Leaf (x,_), Leaf (y,_) -> get_semimetric x y
   in aux x y
 
-let get_min_dist get_semimetric xs =
-  let choose_option d e =
-    let open Distance in function
-    | None -> (d,e)
-    | Some (old_d,old_e) ->
-       if d < old_d
-       then (d,e)
-       else (old_d,old_e) in
-  let min = ref None in
+let get_min_dist get_semimetric x y xs =
+  let min = ref (dist get_semimetric x y, (x,y)) in
+  let update_min x y =
+    let d = dist get_semimetric x y in
+    if d < fst !min
+    then min := (d,(x,y)) in
   List.iter
     (fun x ->
       List.iter (fun y ->
-          if x != y
-          then
-            min := Some (choose_option (dist get_semimetric x y) (x,y) !min)
+          if x != y then update_min x y
         ) xs
     ) xs;
-  match !min with
-  | None -> failwith "get_min_dist"
-  | Some x -> x
+  !min
 
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
@@ -166,8 +159,8 @@ let cluster (hash_list : ('a * (int * string) list) list) =
   let rec aux = function
     | [] -> []
     | [x] -> [x]
-    | lst ->
-       let (p, (u,v)) = get_min_dist get_semimetric lst in
+    | x::y::xs as lst ->
+       let (p, (u,v)) = get_min_dist get_semimetric x y xs in
        match p with
        | Infinity -> lst
        | Regular p -> aux (merge p u v lst) in
