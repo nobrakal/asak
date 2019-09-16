@@ -20,8 +20,6 @@ type config =
 
     @param threshold Used to decide which sub-AST's hash is kept.
 
-    @param let_bindings Associative list of names and previously computed hashs.
-
     @param expr The expression.
 
      @return A tuple with the main hash, and a list of hashes of sub-ASTs.
@@ -30,7 +28,6 @@ All hashes are given with the weight of their AST.
 val hash_lambda :
   config ->
   threshold ->
-  (Ident.t * string) list ->
   Lambda.lambda -> (int * string) * (int * string) list
 
 (** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }.
@@ -38,7 +35,7 @@ val hash_lambda :
 val hash_all :
   config ->
   int ->
-  ('a * Ident.t * Lambda.lambda) list ->
+  ('a * Lambda.lambda) list ->
   ('a * (int * string) list) list
 
 (** Escape hashs. *)
