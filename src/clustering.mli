@@ -12,20 +12,19 @@ module Distance : sig
   type t = Regular of int | Infinity
 
   val compare : t -> t -> int
-  val ( < ) : t -> t -> bool
+  val lt : t -> t -> bool
   val max : t -> t -> t
   val min : t -> t -> t
 
 end
 
-(** Compute the symmetric difference of two {e sorted} lists (using the given order).
+(** Compute the symmetric difference of two {e sorted} lists.
     Return None if the intersection was empty. *)
-val symmetric_difference : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list option
+val symmetric_difference : 'a list -> 'a list -> 'a list option
 
 (** Return the sum of the weight of the symmetric difference
     of their hash lists (or [Infinity] if the intersection was empty *)
 val semimetric :
-  (int * string -> int * string -> int) ->
   (int * string) list -> (int * string) list -> Distance.t
 
 (** Compute recursively the distance between two clusters:

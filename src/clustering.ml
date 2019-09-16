@@ -7,8 +7,6 @@
 
 open Wtree
 
-let compare_snd (_,x) (_,y) = compare x y
-
 module Distance = struct
 
   type t = Regular of int | Infinity
@@ -21,7 +19,7 @@ module Distance = struct
        | Infinity -> -1
        | Regular y' -> compare x' y'
 
-  let ( < ) x y =
+  let lt x y =
     compare x y = -1
 
   let max x y =
@@ -35,12 +33,12 @@ module Distance = struct
     else y
 end
 
-let symmetric_difference cmp x y =
+let symmetric_difference x y =
   let rec aux x y =
     match x,y with
     | [],z|z,[] -> false,z
     | xx::xs,yy::ys ->
-       match cmp xx yy with
+       match compare xx yy with
        | (-1) ->
           let b,ndiff = aux xs y in
           b,xx::ndiff
@@ -59,9 +57,9 @@ let symmetric_difference cmp x y =
 
 let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
 
-let semimetric cmp x y =
+let semimetric x y =
   let open Distance in
-  match symmetric_difference cmp x y with
+  match symmetric_difference x y with
   | None -> Infinity
   | Some diff -> Regular (sum_of_fst diff)
 
@@ -78,22 +76,21 @@ let compute_all_sym_diff xs =
   let aux (x,_) (y,_) =
     if x < y
     then
-      match semimetric compare_snd x y with
+      match semimetric x y with
       | Infinity -> ()
       | Regular dist ->
          update_was_seen x y;
          Hashtbl.add res (x,y) dist
     else ()
   in
-  List.iter (fun x -> List.iter (fun y -> aux x y) xs) xs;
+  List.iter (fun x -> List.iter (aux x) xs) xs;
   was_seen,res
 
 let dist get_semimetric x y =
-  let open Distance in
   let rec aux x y =
     match x,y with
     | Node (_,u,v), l | l, Node (_,u,v) ->
-       max (aux u l) (aux v l)
+       Distance.max (aux u l) (aux v l)
     | Leaf (x,_), Leaf (y,_) -> get_semimetric x y
   in aux x y
 
@@ -101,7 +98,7 @@ let get_min_dist get_semimetric x y xs =
   let min = ref (dist get_semimetric x y, (x,y)) in
   let update_min x y =
     let d = dist get_semimetric x y in
-    if d < fst !min
+    if Distance.lt d (fst !min)
     then min := (d,(x,y)) in
   List.iter
     (fun x ->
@@ -141,9 +138,10 @@ let partition_map f g p l =
   part [] [] l
 
 let cluster (hash_list : ('a * (int * string) list) list) =
+  let sorted_hash_list = List.map (fun (x,xs) -> x,List.sort compare xs) hash_list in
   let start =
-    let cluster = List.fold_left add_in_cluster Cluster.empty hash_list in
-    Cluster.fold (fun k xs acc -> (k, xs)::acc) cluster [] in
+    let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
+    Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
   let was_seen,tbl = compute_all_sym_diff start in
   let get_semimetric x y =
     try
@@ -159,8 +157,8 @@ let cluster (hash_list : ('a * (int * string) list) list) =
   let rec aux = function
     | [] -> []
     | [x] -> [x]
-    | x::y::xs as lst ->
-       let (p, (u,v)) = get_min_dist get_semimetric x y xs in
+    | x::y::_ as lst ->
+       let (p, (u,v)) = get_min_dist get_semimetric x y lst in
        match p with
        | Infinity -> lst
        | Regular p -> aux (merge p u v lst) in
