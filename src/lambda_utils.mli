@@ -9,11 +9,14 @@ type threshold =
   | Percent of int (** A percentage threshold, a number between 0 and 100. *)
   | Hard of int (** A hard threshold. *)
 
-(** Hash a lambda expression. Usage: [hash_lambda will_sort threshold let_bindings expr].
+type config =
+  { should_sort : bool;
+  }
+
+(** Hash a lambda expression. Usage: [hash_lambda config threshold let_bindings expr].
     Two lambda expressions "of the same shape" will share the same hash.
 
-    @param will_sort If true, then all lists of hash will be sorted.
-This is useful to identify more codes, but can leads to some false-positive.
+    @param config
 
     @param threshold Used to decide which sub-AST's hash is kept.
 
@@ -25,15 +28,18 @@ This is useful to identify more codes, but can leads to some false-positive.
 All hashes are given with the weight of their AST.
 *)
 val hash_lambda :
-  bool
-  -> threshold
-  -> (Ident.t * string) list
-  -> Lambda.lambda
-  -> (int*string) * (int*string) list
+  config ->
+  threshold ->
+  (Ident.t * string) list ->
+  Lambda.lambda -> (int * string) * (int * string) list
 
 (** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }.
 *)
-val hash_all : int -> ('a * Ident.t * Lambda.lambda) list -> ('a * (int * string) list) list
+val hash_all :
+  config ->
+  int ->
+  ('a * Ident.t * Lambda.lambda) list ->
+  ('a * (int * string) list) list
 
 (** Escape hashs. *)
 val escape_hash_list : ('a * (int * string) list) list -> ('a * (int * string) list) list

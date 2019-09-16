@@ -37,7 +37,7 @@ let parse_all_implementations hard_weight files_list =
       else type_with_init ?to_open:None)
     >>= fun r ->
     ret @@
-      Lambda_utils.hash_all hard_weight @@
+      Lambda_utils.hash_all {should_sort=false} hard_weight @@
         read_structure lib r
   in List.concat @@ filter_rev_map_print pred files_list
 
