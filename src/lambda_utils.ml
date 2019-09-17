@@ -72,18 +72,26 @@ let hash_lambda config =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
   let hash_lst f = hash_lst config.should_sort f in
-  let rec hash_lambda' = function
-    | Lvar _ -> h1 "Lvar"
+  let rec hash_lambda_aux letbinds x =
+    let hash_lambda' = hash_lambda_aux letbinds in
+    match x with
+    | Lvar x ->
+       begin
+         match List.assoc_opt x letbinds with
+         | None -> h1 "Lvar"
+         | Some x' -> h1' x'
+       end
     | Lconst _ -> h1 "Lconst"
     | Lapply x ->
        hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
     | Lfunction x ->
        hash_string_lst "Lfunction"
          [ hash_lambda' x.body ]
-    | Llet (_,_,_,l,r) ->
+    | Llet (_,_,id,l,r) ->
+       let ((_,_,h) as lefthash) = hash_lambda' l in
        hash_string_lst "Llet"
-         [ hash_lambda' l
-         ; hash_lambda' r]
+         [ lefthash
+         ; hash_lambda_aux ((id,h)::letbinds) r]
     | Lletrec (lst,l) ->
        hash_string_lst "Lletrec"
          [ hash_lst_anon (fun (_,x) -> hash_lambda' x) lst
@@ -165,7 +173,7 @@ let hash_lambda config =
          ; hash_lambda' b
          ; hash_lst_anon hash_lambda' xs
          ]
-  in hash_lambda'
+  in hash_lambda_aux
 
 let sort_filter should_sort threshold main_weight xs =
   let pred =
@@ -177,19 +185,23 @@ let sort_filter should_sort threshold main_weight xs =
   then List.sort compare filtered
   else filtered
 
-let hash_lambda config threshold l =
-  let main_weight,ss_arbres,h = hash_lambda config l in
+let hash_lambda config threshold letbindings l =
+  let main_weight,ss_arbres,h =
+    hash_lambda config letbindings l in
   let fmain_weight = float_of_int main_weight in
   (main_weight,h), sort_filter config.should_sort threshold fmain_weight ss_arbres
 
 let hash_all config hard_weight xs =
   let threshold = Hard hard_weight in
-  List.map
-    (fun (name_prefixed,x) ->
-      let (main_hash,leaves_hashs) = hash_lambda config threshold x in
-      (name_prefixed, main_hash::leaves_hashs)
-    )
-    xs
+  let (_,all_hashs) =
+    List.fold_right
+      (fun (name_prefixed,id,x) (letbinds,acc) ->
+        let (main_hash,leaves_hashs) = hash_lambda config threshold letbinds x in
+        (id,snd main_hash)::letbinds,(name_prefixed, main_hash::leaves_hashs)::acc
+      )
+      xs
+      ([],[])
+  in all_hashs
 
 let escape_hash_list xs = List.map (fun (name,xs) -> name,List.map (fun (p,h) -> p,String.escaped h) xs) xs
 
