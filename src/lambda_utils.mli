@@ -30,7 +30,6 @@ All hashes are given with the weight of their AST.
 val hash_lambda :
   config ->
   threshold ->
-  (Ident.t * string) list ->
   Lambda.lambda -> (int * string) * (int * string) list
 
 (** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }.
