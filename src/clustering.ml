@@ -89,9 +89,12 @@ let compute_all_sym_diff xs =
 let dist get_semimetric x y =
   let rec aux x y =
     match x,y with
-    | Node (_,u,v), l | l, Node (_,u,v) ->
-       Distance.max (aux u l) (aux v l)
     | Leaf (x,_), Leaf (y,_) -> get_semimetric x y
+    | Node (_,u,v), l | l, Node (_,u,v) ->
+       let open Distance in
+       match aux u l with
+       | Infinity -> Infinity (* Avoid the computation of v when possible *)
+       | x -> max x (aux v l)
   in aux x y
 
 let get_min_dist get_semimetric x y xs =
