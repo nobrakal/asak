@@ -11,6 +11,7 @@ type threshold =
 
 type config =
   { should_sort : bool;
+    hash_var : bool;
   }
 
 (** Hash a lambda expression. Usage: [hash_lambda config threshold let_bindings expr].

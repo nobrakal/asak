@@ -12,6 +12,7 @@ type threshold = Percent of int | Hard of int
 
 type config =
   { should_sort : bool;
+    hash_var : bool;
   }
 
 let h1' x = 1,[],x
@@ -72,23 +73,34 @@ let hash_lambda config x =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
   let hash_lst f = hash_lst config.should_sort f in
-  let rec hash_lambda' x =
+  let rec hash_lambda_aux i letbinds x =
+    let hash_lambda' = hash_lambda_aux i letbinds in
     match x with
-    | Lvar _ -> h1 "Lvar"
+    | Lvar var ->
+       let str =
+         if config.hash_var
+         then "Lvar"
+         else
+           match List.assoc_opt var letbinds with
+           | None -> Ident.name var
+           | Some x -> "Lvar" ^ (string_of_int x)
+       in h1 str
     | Lconst _ -> h1 "Lconst"
     | Lapply x ->
        hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
     | Lfunction x ->
        hash_string_lst "Lfunction"
          [ hash_lambda' x.body ]
-    | Llet (_,_,_,l,r) ->
+    | Llet (_,_,id,l,r) ->
        hash_string_lst "Llet"
          [ hash_lambda' l
-         ; hash_lambda' r]
+         ; hash_lambda_aux (i+1) ((id,i)::letbinds) r]
     | Lletrec (lst,l) ->
+       let (i,letbinds) =
+         List.fold_right (fun (id,_) (i,acc) -> (i+1),(id,i)::acc) lst (i,letbinds) in
        hash_string_lst "Lletrec"
-         [ hash_lst_anon (fun (_,x) -> hash_lambda' x) lst
-         ; hash_lambda' l]
+         [ hash_lst_anon (fun (_,x) -> hash_lambda_aux i letbinds x) lst
+         ; hash_lambda_aux i letbinds l]
     | Lprim (_,lst,_) ->
        hash_string_lst "Lprim"
          [ hash_lst_anon hash_lambda' lst
@@ -166,7 +178,7 @@ let hash_lambda config x =
          ; hash_lambda' b
          ; hash_lst_anon hash_lambda' xs
          ]
-  in hash_lambda' x
+  in hash_lambda_aux 0 [] x
 
 let sort_filter should_sort threshold main_weight xs =
   let pred =
