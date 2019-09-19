@@ -89,8 +89,10 @@ let hash_lambda config x =
     | Lapply x ->
        hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
     | Lfunction x ->
+       let (i,letbinds) =
+         List.fold_right (fun (id,_) (i,acc) -> (i+1, (id,i)::acc)) x.params (i,letbinds) in
        hash_string_lst "Lfunction"
-         [ hash_lambda' x.body ]
+         [ hash_lambda_aux i letbinds x.body ]
     | Llet (_,_,id,l,r) ->
        hash_string_lst "Llet"
          [ hash_lambda' l
