@@ -78,7 +78,7 @@ let hash_lambda config x =
     match x with
     | Lvar var ->
        let str =
-         if config.hash_var
+         if not config.hash_var
          then "Lvar"
          else
            match List.assoc_opt var letbinds with
