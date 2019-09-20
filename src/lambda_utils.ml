@@ -69,6 +69,13 @@ let hash_meth_kind x = h1 @@
    | Public -> "Public"
    | Cached -> "Cached"
 
+let extract_params_name xs =
+#if OCAML_VERSION >= (4, 08, 0)
+  List.map fst xs
+#else
+  xs
+#endif
+
 let hash_lambda config x =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
@@ -89,8 +96,9 @@ let hash_lambda config x =
     | Lapply x ->
        hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
     | Lfunction x ->
+       let params = extract_params_name x.params in
        let (i,letbinds) =
-         List.fold_right (fun (id,_) (i,acc) -> (i+1, (id,i)::acc)) x.params (i,letbinds) in
+         List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params (i,letbinds) in
        hash_string_lst "Lfunction"
          [ hash_lambda_aux i letbinds x.body ]
     | Llet (_,_,id,l,r) ->
