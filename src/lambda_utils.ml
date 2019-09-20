@@ -169,17 +169,17 @@ let hash_lambda config x =
          [ hash_lambda' l
          ; hash_lambda' r
          ]
-    | Ltrywith (l,_,r) ->
+    | Ltrywith (l,id,r) ->
        hash_string_lst "Ltrywith"
          [ hash_lambda' l
-         ; hash_lambda' r
+         ; hash_lambda_aux (i+1) ((id,i)::letbinds) r
          ]
-    | Lfor (_,a,b,d,c) ->
+    | Lfor (id,a,b,d,c) ->
        hash_string_lst "Lfor"
          [ hash_lambda' a
          ; hash_lambda' b
          ; hash_direction d
-         ; hash_lambda' c
+         ; hash_lambda_aux (i+1) ((id,i)::letbinds) c
          ]
     | Lsend (m,a,b,xs,_) ->
        hash_string_lst "Lsend"
