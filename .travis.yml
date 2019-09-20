@@ -3,9 +3,9 @@ sudo: required
 
 env:
   - OCAML_VERSION=4.05
-  - OCAML_VERSION=4.06
   - OCAML_VERSION=4.07
-  - OCAML_VERSION=4.08 POST_INSTALL_HOOK="opam install dune odoc; dune build @doc; cp -r _build/default/_doc/_html/ result/"
+  - OCAML_VERSION=4.08
+  - OCAML_VERSION=4.09 POST_INSTALL_HOOK="opam install dune odoc; dune build @doc; cp -r _build/default/_doc/_html/ result/"
 os:
   - linux
 
@@ -22,4 +22,4 @@ deploy:
   local_dir: result/
   on:
     branch: master
-    condition: "$OCAML_VERSION = 4.08"
+    condition: "$OCAML_VERSION = 4.09"
