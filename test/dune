@@ -2,3 +2,7 @@
  (name test)
  (libraries alcotest asak)
 )
+
+(alias
+ (name   runtest)
+ (action (run ./test.exe)))
