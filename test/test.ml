@@ -36,9 +36,10 @@ let hash_strict =
   Lambda_utils.(hash_lambda {should_sort=false;hash_var=true} threshold)
 
 let tests_same_hash =
-  [("inline"     , "let f x = let a x = x in a x", "let f x = x"      );
-   ("alpha-conv1", "let f a b = a + b"           , "let f x y = x + y");
-   ("alpha-conv2", "let f a = let b = a in a + b", "let f a = let x = a in a + x");
+  [("inline"     , "let f x = let a x = x in a x"    , "let f x = x"      );
+   ("alpha-conv1", "let f a b = a + b"               , "let f x y = x + y");
+   ("alpha-conv2", "let f a = let b = a in a + b"    , "let f a = let x = a in a + x");
+   ("open"       , "let f g = let open List in map g", "let f g = List.map g");
   ]
 
 let same_hash =
