@@ -24,9 +24,9 @@ let get_last_lambda_of_str str =
 let testable_hash =
   let open Alcotest in
   let hash = pair int string in
-  pair hash (slist hash compare) 
-     
-let hash_and_compare name hash str1 str2 =
+  pair hash (slist hash compare)
+
+let hash_and_compare name hash str1 str2 () =
   let lambda1 = get_last_lambda_of_str str1 in
   let lambda2 = get_last_lambda_of_str str2 in
   let open Alcotest in
@@ -35,17 +35,20 @@ let hash_and_compare name hash str1 str2 =
 let hash_strict =
   Lambda_utils.(hash_lambda {should_sort=false;hash_var=true} threshold)
 
-let same_hash = "same hash"
+let tests_same_hash =
+  [("inline"     , "let f x = let a x = x in a x", "let f x = x"      );
+   ("alpha-conv1", "let f a b = a + b"           , "let f x y = x + y");
+   ("alpha-conv2", "let f a = let b = a in a + b", "let f a = let x = a in a + x");
+  ]
 
-let test_inline1 () =
-  let str1 = "let f x = let a x = x in a x" in
-  let str2 = "let f x = x" in
-  hash_and_compare same_hash hash_strict str1 str2
+let same_hash =
+  let run_test (name, str1, str2) =
+    Alcotest.test_case name `Quick @@
+      hash_and_compare "same_hash" hash_strict str1 str2 in
+  List.map run_test tests_same_hash
 
 let () =
   let open Alcotest in
   run "asak" [
-      "inline_all", [
-        test_case "test_inline1" `Quick test_inline1;
-      ];
+      "same hash", same_hash;
     ]
