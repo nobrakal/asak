@@ -51,8 +51,14 @@ let tests_same_hash =
    ("match-order", ( "let f x = match x with | Some x -> x | None -> 1"
                    , "let f x = match x with | None -> 1 | Some x -> x"));
 
+#if OCAML_VERSION >= (4, 07, 0)
+
+   ("inline2"    , ( "let f x = let a x = x in a x"
+                   , "let f x = x" ));
+
    ("function"   , ( "let f x = match x with | Some x -> x | None -> 1"
                    , "let f = function | Some x -> x | None -> 1"));
+#endif
   ]
 
 let same_hash =

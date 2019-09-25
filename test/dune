@@ -1,6 +1,7 @@
 (executable
  (name test)
  (libraries alcotest asak)
+ (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
 )
 
 (alias
