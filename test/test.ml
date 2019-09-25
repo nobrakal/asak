@@ -36,10 +36,7 @@ let hash_strict =
   Lambda_utils.(hash_lambda {should_sort=false;hash_var=true} threshold)
 
 let tests_same_hash =
-  [("inline"     , ( "let f x = let a x = x in a x"
-                   , "let f x = x" ));
-
-   ("alpha-conv1", ( "let f a b = a + b"
+  [("alpha-conv1", ( "let f a b = a + b"
                    , "let f x y = x + y" ));
 
    ("alpha-conv2", ( "let f a = let b = a in a + b"
@@ -53,7 +50,10 @@ let tests_same_hash =
 
 #if OCAML_VERSION >= (4, 08, 0)
 
-   ("inline2"    , ( "let f x = let a = 2 in a"
+  ("inline"      , ( "let f x = let a x = x in a x"
+                   , "let f x = x" ));
+
+   ("inline2"    , ( "let f = let a = 2 in a"
                    , "let f = 2" ));
 
    ("function"   , ( "let f x = match x with | Some x -> x | None -> 1"
