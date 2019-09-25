@@ -10,14 +10,14 @@ type threshold =
   | Hard of int (** A hard threshold. *)
 
 type config =
-  { should_sort : bool;
-    hash_var : bool;
+  { should_sort : bool; (** If we sort all lists of hash. *)
+    hash_var : bool; (** If we hash names in the AST. *)
   }
 
 (** Hash a lambda expression. Usage: [hash_lambda config threshold let_bindings expr].
     Two lambda expressions "of the same shape" will share the same hash.
 
-    @param config
+    @param config A configuration for the function.
 
     @param threshold Used to decide which sub-AST's hash is kept.
 
