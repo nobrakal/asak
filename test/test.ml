@@ -53,8 +53,8 @@ let tests_same_hash =
 
 #if OCAML_VERSION >= (4, 08, 0)
 
-   ("inline2"    , ( "let f x = let a x = x in a x"
-                   , "let f x = x" ));
+   ("inline2"    , ( "let f x = let a = 2 in a"
+                   , "let f = 2" ));
 
    ("function"   , ( "let f x = match x with | Some x -> x | None -> 1"
                    , "let f = function | Some x -> x | None -> 1"));
