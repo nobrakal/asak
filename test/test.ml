@@ -36,14 +36,27 @@ let hash_strict =
   Lambda_utils.(hash_lambda {should_sort=false;hash_var=true} threshold)
 
 let tests_same_hash =
-  [("inline"     , "let f x = let a x = x in a x"    , "let f x = x"      );
-   ("alpha-conv1", "let f a b = a + b"               , "let f x y = x + y");
-   ("alpha-conv2", "let f a = let b = a in a + b"    , "let f a = let x = a in a + x");
-   ("open"       , "let f g = let open List in map g", "let f g = List.map g");
+  [("inline"     , ( "let f x = let a x = x in a x"
+                   , "let f x = x" ));
+
+   ("alpha-conv1", ( "let f a b = a + b"
+                   , "let f x y = x + y" ));
+
+   ("alpha-conv2", ( "let f a = let b = a in a + b"
+                   , "let f a = let x = a in a + x" ));
+
+   ("open"       , ( "let f g = let open List in map g"
+                   , "let f g = List.map g" ));
+
+   ("match-order", ( "let f x = match x with | Some x -> x | None -> 1"
+                   , "let f x = match x with | None -> 1 | Some x -> x"));
+
+   ("function"   , ( "let f x = match x with | Some x -> x | None -> 1"
+                   , "let f = function | Some x -> x | None -> 1"));
   ]
 
 let same_hash =
-  let run_test (name, str1, str2) =
+  let run_test (name, (str1, str2)) =
     Alcotest.test_case name `Quick @@
       hash_and_compare "same_hash" hash_strict str1 str2 in
   List.map run_test tests_same_hash
