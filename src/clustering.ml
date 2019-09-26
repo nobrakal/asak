@@ -86,10 +86,10 @@ let compute_all_sym_diff xs =
   List.iter (fun x -> List.iter (aux x) xs) xs;
   was_seen,res
 
-let dist get_semimetric x y =
+let dist semimetric x y =
   let rec aux x y =
     match x,y with
-    | Leaf (x,_), Leaf (y,_) -> get_semimetric x y
+    | Leaf (x,_), Leaf (y,_) -> semimetric x y
     | Node (_,u,v), l | l, Node (_,u,v) ->
        let open Distance in
        match aux u l with
@@ -97,19 +97,17 @@ let dist get_semimetric x y =
        | x -> max x (aux v l)
   in aux x y
 
-let get_min_dist get_semimetric x y xs =
-  let min = ref (dist get_semimetric x y, (x,y)) in
-  let update_min x y =
-    let d = dist get_semimetric x y in
-    if Distance.lt d (fst !min)
-    then min := (d,(x,y)) in
-  List.iter
-    (fun x ->
-      List.iter (fun y ->
-          if x != y then update_min x y
-        ) xs
-    ) xs;
-  !min
+let get_min_dist semimetric x y xs =
+  List.fold_left
+    (fun min x ->
+      List.fold_left
+        (fun min y ->
+          let d = dist semimetric x y in
+          if Distance.lt d (fst min)
+          then (d,(x,y))
+          else min
+        ) min xs
+    ) (dist semimetric x y, (x,y)) xs
 
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
@@ -140,36 +138,40 @@ let partition_map f g p l =
      if p x then part (f x :: yes) no l else part yes (g x :: no) l in
   part [] [] l
 
+let semimetric_from tbl x y =
+  try
+    let value =
+      if x < y
+      then Hashtbl.find tbl (x,y)
+      else Hashtbl.find tbl (y,x) in
+    Distance.Regular value
+  with Not_found -> Distance.Infinity
+
+let compute_with tbl =
+  let rec compute = function
+  | [] -> []
+  | [x] -> [x]
+  | x::y::_ as lst ->
+     let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
+     match p with
+     | Infinity -> lst
+     | Regular p -> compute (merge p u v lst)
+  in compute
+
 let cluster (hash_list : ('a * (int * string) list) list) =
   let sorted_hash_list = List.map (fun (x,xs) -> x,List.sort compare xs) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
   let was_seen,tbl = compute_all_sym_diff start in
-  let get_semimetric x y =
-    try
-      let value =
-        if x < y
-        then Hashtbl.find tbl (x,y)
-        else Hashtbl.find tbl (y,x) in
-      Distance.Regular value
-    with Not_found -> Distance.Infinity in
   let (start, alone) =
     partition_map
       (fun x -> Leaf x) (fun (_,x) -> Leaf x) (fun (x,_) -> Hashtbl.mem was_seen x) start in
-  let rec aux = function
-    | [] -> []
-    | [x] -> [x]
-    | x::y::_ as lst ->
-       let (p, (u,v)) = get_min_dist get_semimetric x y lst in
-       match p with
-       | Infinity -> lst
-       | Regular p -> aux (merge p u v lst) in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
       List.map remove_fst_in_tree @@
-        aux start in
+        compute_with tbl start in
   cluster @ alone
 
 let print_cluster show cluster =
