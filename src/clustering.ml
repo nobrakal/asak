@@ -55,7 +55,7 @@ let symmetric_difference x y =
   then Some res
   else None
 
-let sum_of_fst = List.fold_left (fun acc (a,_) -> acc + a) 0
+let sum_of_fst xs = List.fold_left (fun acc (a,_) -> acc + a) 0 xs
 
 let semimetric x y =
   let open Distance in
@@ -93,7 +93,7 @@ let dist semimetric x y =
     | Node (_,u,v), l | l, Node (_,u,v) ->
        let open Distance in
        match aux u l with
-       | Infinity -> Infinity (* Avoid the computation of v when possible *)
+       | Infinity -> Infinity (* Avoid the computation of (aux v l) when possible *)
        | x -> max x (aux v l)
   in aux x y
 
@@ -120,7 +120,6 @@ end
 
 module Cluster = Map.Make(Elem)
 
-(* Add x in a cluster, identified by its hash list xs *)
 let add_in_cluster map (x,xs) =
   match Cluster.find_opt xs map with
   | None -> Cluster.add xs [x] map
@@ -167,11 +166,11 @@ let cluster (hash_list : ('a * (int * string) list) list) =
   let (start, alone) =
     partition_map
       (fun x -> Leaf x) (fun (_,x) -> Leaf x) (fun (x,_) -> Hashtbl.mem was_seen x) start in
+  let dendrogram_list = compute_with tbl start in
   let cluster =
     List.sort
-      (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y)) @@
-      List.map remove_fst_in_tree @@
-        compute_with tbl start in
+      (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
+      (List.map remove_fst_in_tree dendrogram_list) in
   cluster @ alone
 
 let print_cluster show cluster =

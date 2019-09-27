@@ -23,9 +23,9 @@ end
 val symmetric_difference : 'a list -> 'a list -> 'a list option
 
 (** Return the sum of the weight of the symmetric difference
-    of their hash lists (or [Infinity] if the intersection was empty *)
+    of the two arguments (or [Infinity] if the intersection was empty *)
 val semimetric :
-  (int * string) list -> (int * string) list -> Distance.t
+  (int * 'a) list -> (int * 'a) list -> Distance.t
 
 (** Compute recursively the distance between two clusters:
 
@@ -36,19 +36,18 @@ val semimetric :
 
 This is not a mathematically valid distance, but only a semimetric.
 
-The first argument must be an equivalent of {!semimetric}. It is guaranteed that
-its arguments will be in ascending order.
+The first argument must be an equivalent of {!semimetric}.
  *)
 val dist :
-  ((int * string) list -> (int * string) list -> Distance.t) ->
-  ((int * string) list * 'b) Wtree.wtree -> ((int * string) list * 'b) Wtree.wtree
+  ((int * 'a) list -> (int * 'a) list -> Distance.t) ->
+  ((int * 'a) list * 'b) Wtree.wtree -> ((int * 'a) list * 'b) Wtree.wtree
   -> Distance.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
     clustering using {!dist}.
 
     @return A list of trees, where
-    two keys are in the same tree if they share at least one hash, and in
+    two keys are in the same tree if they share at least one hash and in
     the same leaf if they share exactly the same hash list.
 
     The list is sorted with biggest trees first.
