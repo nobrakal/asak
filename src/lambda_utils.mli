@@ -39,7 +39,7 @@ val hash_all :
   config ->
   int ->
   ('a * Ident.t * Lambda.lambda) list ->
-  ('a * (int * string) list) list
+  ('a * ((int * string) * (int * string) list)) list
 
 (** Escape hashs. *)
 val escape_hash_list : ('a * (int * string) list) list -> ('a * (int * string) list) list

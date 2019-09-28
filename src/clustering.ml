@@ -73,10 +73,10 @@ let compute_all_sym_diff xs =
   let update_was_seen x y =
     Hashtbl.add was_seen x ();
     Hashtbl.add was_seen y (); in
-  let aux (x,_) (y,_) =
+  let aux ((x,xs),_) ((y,ys),_) =
     if x < y
     then
-      match semimetric x y with
+      match semimetric xs ys with
       | Infinity -> ()
       | Regular dist ->
          update_was_seen x y;
@@ -114,7 +114,7 @@ let merge p u v xs =
   (Node (p,u,v))::xs
 
 module Elem = struct
-  type t = (int * string) list
+  type t = (int * string) * (int * string) list
   let compare = compare
 end
 
@@ -157,21 +157,24 @@ let compute_with tbl =
      | Regular p -> compute (merge p u v lst)
   in compute
 
-let cluster (hash_list : ('a * (int * string) list) list) =
-  let sorted_hash_list = List.map (fun (x,xs) -> x,List.sort compare xs) hash_list in
+let cluster (hash_list : ('a * ((int * string) * (int * string) list)) list) =
+  let sorted_hash_list = List.map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
+  let start,single =
+    partition_map
+      (fun x -> x) (fun (_,x) -> Leaf x) (fun ((_,xs),_) -> match xs with | [_] -> false | _ -> true) start in
   let was_seen,tbl = compute_all_sym_diff start in
   let (start, alone) =
     partition_map
-      (fun x -> Leaf x) (fun (_,x) -> Leaf x) (fun (x,_) -> Hashtbl.mem was_seen x) start in
+      (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> Hashtbl.mem was_seen x) start in
   let dendrogram_list = compute_with tbl start in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
       (List.map remove_fst_in_tree dendrogram_list) in
-  cluster @ alone
+  cluster @ alone @ single
 
 let print_cluster show cluster =
   let rec aux i = function
