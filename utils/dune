@@ -1,0 +1,4 @@
+(executable
+  (name run_on_lambdas)
+  (libraries str asak)
+)
