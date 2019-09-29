@@ -16,12 +16,16 @@ let test_problem should_fail x res =
     else print_endline str; true
   else false
 
+let test_comand x =
+  let res = Sys.command (x ^ " --show-actions | grep \"remove[ ]*ocaml-variants\"")
+  in not (res = 0)
+
 let install_pkg prefix x =
-  let res = Sys.command ("opam install -y --switch="^ prefix ^" --show-actions " ^ x ^" | grep \"remove[ ]*ocaml-variants\"") in
-  if res = 0
+  let cmd = "opam install -y --switch=" ^ prefix ^ " " ^ x in
+  if not (test_comand cmd)
   then false
   else
-    let res = Sys.command ("opam install -y --switch="^ prefix ^" " ^ x) in
+    let res = Sys.command cmd in
     if test_problem false x res
     then false
     else
@@ -29,8 +33,12 @@ let install_pkg prefix x =
       if test_problem true x res
       then false
       else
-        let res = Sys.command ("opam remove -a -y --switch="^ prefix ^" " ^ x) in
-        not (test_problem false x res)
+        let cmd = "opam remove -a -y --switch=" ^ prefix ^ " " ^ x in
+        if not (test_comand cmd)
+        then false
+        else
+          let res = Sys.command cmd in
+          not (test_problem false x res)
 
 let remove_head x xs =
   match x with
@@ -39,7 +47,7 @@ let remove_head x xs =
      let rec aux = function
        | [] -> []
        | y::ys ->
-          if x >= y
+          if x < y
           then ys
           else aux ys
      in aux xs
