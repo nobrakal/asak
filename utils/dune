@@ -1,4 +1,11 @@
 (executable
   (name run_on_lambdas)
+  (modules run_on_lambdas)
   (libraries str asak)
+)
+
+(executable
+  (name build_all_opam)
+  (modules build_all_opam)
+  (libraries unix)
 )

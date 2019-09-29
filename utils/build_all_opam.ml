@@ -16,17 +16,21 @@ let test_problem should_fail x res =
     else print_endline str; true
   else false
 
-let install_pkg x =
-  let res = Sys.command ("opam install -y --switch=/home/nobrakal/prog/ocaml/ --show-actions " ^ x ^" | grep \"remove[ ]*ocaml-variants\"") in
+let install_pkg prefix x =
+  let res = Sys.command ("opam install -y --switch="^ prefix ^" --show-actions " ^ x ^" | grep \"remove[ ]*ocaml-variants\"") in
   if res = 0
   then false
   else
-    let res = Sys.command ("opam install -y --switch=/home/nobrakal/prog/ocaml/ " ^ x) in
+    let res = Sys.command ("opam install -y --switch="^ prefix ^" " ^ x) in
     if test_problem false x res
     then false
     else
-      let res = Sys.command ("PKG_NAME="^x^" opam reinstall -y --switch=/home/nobrakal/prog/ocaml/ " ^ x) in
-      not (test_problem true x res)
+      let res = Sys.command ("PKG_NAME="^x^" opam reinstall -y --switch="^ prefix ^" " ^ x) in
+      if test_problem true x res
+      then false
+      else
+        let res = Sys.command ("opam remove -a -y --switch="^ prefix ^" " ^ x) in
+        not (test_problem false x res)
 
 let remove_head x xs =
   match x with
@@ -35,20 +39,20 @@ let remove_head x xs =
      let rec aux = function
        | [] -> []
        | y::ys ->
-          if x = y
+          if x >= y
           then ys
           else aux ys
      in aux xs
 
-let main dir from =
+let main prefix dir from =
   let desc = Unix.opendir dir in
   let pkg_list =
     remove_head from @@
       List.sort compare @@
         read_all_pkg desc in
   Unix.closedir desc;
-  let lst_ok = List.filter install_pkg pkg_list in
+  let lst_ok = List.filter (install_pkg prefix) pkg_list in
   print_endline "INSTALLED PKGS";
   List.iter print_endline lst_ok
 
-let () = main Sys.argv.(1) (try Some (Sys.argv.(2)) with | Invalid_argument _ -> None)
+let () = main Sys.argv.(1) Sys.argv.(2) (try Some (Sys.argv.(3)) with | Invalid_argument _ -> None)
