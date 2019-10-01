@@ -21,24 +21,13 @@ let test_comand x =
   in not (res = 0)
 
 let install_pkg prefix x =
-  let cmd = "opam install -y --switch=" ^ prefix ^ " " ^ x in
+  let cmd = "opam reinstall -y --switch=" ^ prefix ^ " " ^ x in
   if not (test_comand cmd)
-  then false
+  then
+    begin print_endline ("PROBLEM WITH: " ^ x); false end
   else
     let res = Sys.command cmd in
-    if test_problem false x res
-    then false
-    else
-      let res = Sys.command ("PKG_NAME="^x^" opam reinstall -y --switch="^ prefix ^" " ^ x) in
-      if test_problem true x res
-      then false
-      else
-        let cmd = "opam remove -a -y --switch=" ^ prefix ^ " " ^ x in
-        if not (test_comand cmd)
-        then false
-        else
-          let res = Sys.command cmd in
-          not (test_problem false x res)
+    not (test_problem false x res)
 
 let remove_head x xs =
   match x with
