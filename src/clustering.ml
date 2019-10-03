@@ -158,7 +158,7 @@ let compute_with tbl =
   in compute
 
 let cluster (hash_list : ('a * ((int * string) * (int * string) list)) list) =
-  let sorted_hash_list = List.map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
+  let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
