@@ -2,7 +2,7 @@ let read threshold x =
   let open Asak.Lambda_utils in
   let prefix =
     try
-      let ind = String.index x '.' in
+      let ind = String.index x ':' in
       let start =
         try String.rindex x '/' + 1
         with Not_found -> 0 in
