@@ -21,7 +21,7 @@ let test_comand x =
   in not (res = 0)
 
 let install_pkg prefix x =
-  let cmd = "opam reinstall -y --switch=" ^ prefix ^ " " ^ x in
+  let cmd = "opam install -y --switch=" ^ prefix ^ " " ^ x in
   if not (test_comand cmd)
   then
     begin print_endline ("PROBLEM WITH: " ^ x); false end
