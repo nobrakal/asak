@@ -12,6 +12,14 @@ RUN cd /home/opam/ocaml \
     && eval $(opam env) \
     && opam install .
 
+RUN sudo apt-get update
+RUN sudo apt-get install -y \
+    # for conf-m4
+    m4 \
+    pkg-config \
+    # for ctypes
+    libffi-dev
+
 COPY . ./
 
 RUN sudo chown -R opam:nogroup .
