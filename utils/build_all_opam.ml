@@ -29,27 +29,24 @@ let install_pkg prefix x =
     let res = Sys.command cmd in
     not (test_problem false x res)
 
-let remove_head x xs =
+let mk_pred cmp x y =
   match x with
-  | None -> xs
-  | Some x ->
-     let rec aux = function
-       | [] -> []
-       | y::ys ->
-          if x < y
-          then ys
-          else aux ys
-     in aux xs
+  | None -> true
+  | Some x -> cmp x y
 
-let main prefix dir from =
+let main prefix dir from top =
   let desc = Unix.opendir dir in
+  let from = mk_pred (fun x y -> x <= y) from in
+  let top  = mk_pred (fun x y -> x >= y) top in
   let pkg_list =
-    remove_head from @@
-      List.sort compare @@
+    List.sort compare @@
+      List.filter (fun x -> from x && top x) @@
         read_all_pkg desc in
   Unix.closedir desc;
   let lst_ok = List.filter (install_pkg prefix) pkg_list in
   print_endline "INSTALLED PKGS";
   List.iter print_endline lst_ok
 
-let () = main Sys.argv.(1) Sys.argv.(2) (try Some (Sys.argv.(3)) with | Invalid_argument _ -> None)
+let () = main Sys.argv.(1) Sys.argv.(2)
+           (try Some (Sys.argv.(3)) with | Invalid_argument _ -> None)
+           (try Some (Sys.argv.(4)) with | Invalid_argument _ -> None)
