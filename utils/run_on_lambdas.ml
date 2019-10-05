@@ -2,7 +2,7 @@ let read threshold x =
   let open Asak.Lambda_utils in
   let prefix =
     try
-      let ind = String.index x '.' in
+      let ind = String.index x ':' in
       let start =
         try String.rindex x '/' + 1
         with Not_found -> 0 in
@@ -11,7 +11,7 @@ let read threshold x =
     | Not_found -> "" in
   let chan = open_in x in
   let res =
-    List.map (fun (name,xs) -> prefix ^ ":" ^ name, xs) @@
+    List.rev_map (fun (name,xs) -> prefix ^ ":" ^ name, xs) @@
       hash_all {should_sort=false;hash_var=true} threshold @@
         Marshal.from_channel chan in
   close_in chan;
