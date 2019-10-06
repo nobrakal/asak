@@ -14,11 +14,17 @@ RUN cd /home/opam/ocaml \
 
 RUN sudo apt-get update
 RUN sudo apt-get install -y \
-    # for conf-m4
-    m4 \
     pkg-config \
     # for ctypes
-    libffi-dev
+    libffi-dev \
+    # for conf-*
+    m4 ncurses-dev libgmp-dev zlib1g-dev gnuplot-x11 \
+    libgtksourceview2.0-dev cpio libzstd-dev libzmq3-dev \
+    wget vim time libtidy-dev libgdbm-dev zlib1g-dev \
+    libsnappy-dev libsqlite3-dev tcl-dev libtidy-dev \
+    libsfml-dev libsdl-ttf2.0-dev libsdl2-dev libsdl2-image-dev \
+    libsdl2-mixer-dev libsdl2-net-dev libelementary-dev coinor-csdp \
+    cmake clang llvm-6.0-dev autoconf librocksdb-dev libaio-dev
 
 COPY . ./
 
