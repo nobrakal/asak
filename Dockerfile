@@ -1,17 +1,6 @@
 FROM ocaml/opam2:4.08
 # NB: opam-repositroy is here: /home/opam/opam-repository
 
-RUN opam install dune
-
-RUN git clone --branch 4.08 --single-branch --depth=1 https://github.com/nobrakal/ocaml.git /home/opam/ocaml
-
-RUN mkdir /tmp/asak
-
-RUN cd /home/opam/ocaml \
-    && opam switch create . --empty \
-    && eval $(opam env) \
-    && opam install .
-
 RUN sudo apt-get update
 RUN sudo apt-get install -y \
     pkg-config \
@@ -25,6 +14,17 @@ RUN sudo apt-get install -y \
     libsfml-dev libsdl-ttf2.0-dev libsdl2-dev libsdl2-image-dev \
     libsdl2-mixer-dev libsdl2-net-dev libelementary-dev coinor-csdp \
     cmake clang llvm-6.0-dev autoconf librocksdb-dev libaio-dev
+
+RUN opam install dune
+
+RUN git clone --branch 4.08 --single-branch --depth=1 https://github.com/nobrakal/ocaml.git /home/opam/ocaml
+
+RUN mkdir /tmp/asak
+
+RUN cd /home/opam/ocaml \
+    && opam switch create . --empty \
+    && eval $(opam env) \
+    && opam install .
 
 COPY . ./
 
