@@ -9,3 +9,9 @@
   (modules build_all_opam)
   (libraries unix)
 )
+
+(executable
+  (name inspect_db)
+  (modules inspect_db)
+  (libraries str asak)
+)
