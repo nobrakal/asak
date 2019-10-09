@@ -19,16 +19,16 @@ let read threshold x =
 
 let get_args () =
   match Array.to_list Sys.argv with
-  | _::filename::nb::xs -> (filename,int_of_string nb,xs)
+  | _::cores::filename::nb::xs -> (int_of_string cores,filename,int_of_string nb,xs)
   | _ -> failwith "Specify a threshold."
 
 let () =
-  let (filename,threshold,xs) = get_args () in
+  let (cores,filename,threshold,xs) = get_args () in
   let read = read threshold in
   let all_hashs =
     List.fold_left
       (fun acc x -> read x @ acc) [] xs in
-  let all_cluster = Asak.Clustering.cluster all_hashs in
+  let all_cluster = Asak.Clustering.cluster cores all_hashs in
   let chan = open_out_bin filename in
   Marshal.to_channel chan all_cluster [];
   close_out chan;

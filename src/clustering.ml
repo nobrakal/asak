@@ -7,8 +7,6 @@
 
 open Wtree
 
-open Functory.Cores
-
 module Distance = struct
 
   type t = Regular of int | Infinity
@@ -90,8 +88,8 @@ let compute_all_sym_diff cores xs =
     List.fold_left
       (fun (i,xs,acc) x ->
         if i mod nb_per_cores = 0
-        then 0,[x],(xs::acc)
-        else i+1,x::xs,acc) (0,[],[] )xs in
+        then 1,[x],(xs::acc)
+        else i+1,x::xs,acc) (1,[],[]) xs in
   let cored = xs::cored in
   let update_was_seen was_seen x y =
     HSet.add x (HSet.add y was_seen) in
@@ -109,8 +107,7 @@ let compute_all_sym_diff cores xs =
   let neutral = (HSet.empty, HMap.empty) in
   let map xs' = List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) neutral xs' in
   let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
-  map_fold_ac ~f:map
-    ~fold neutral cored
+  List.fold_left fold neutral @@ Parmap.parmap ~ncores:cores ~chunksize:1  map (Parmap.L cored)
 
 let dist semimetric x y =
   let rec aux x y =
@@ -182,7 +179,6 @@ let compute_with tbl =
   in compute
 
 let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) list) =
-  set_number_of_cores cores;
   let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
