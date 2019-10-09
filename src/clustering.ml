@@ -83,7 +83,16 @@ module HSet = Set.Make(Hash)
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
  *)
-let compute_all_sym_diff xs =
+let compute_all_sym_diff cores xs =
+  let len = List.length xs in
+  let nb_per_cores = len / cores in
+  let (_,xs,cored) =
+    List.fold_left
+      (fun (i,xs,acc) x ->
+        if i mod nb_per_cores = 0
+        then 0,[x],(xs::acc)
+        else i+1,x::xs,acc) (0,[],[] )xs in
+  let cored = xs::cored in
   let update_was_seen was_seen x y =
     HSet.add x (HSet.add y was_seen) in
   let aux ((x,xs),_) ((was_seen,res) as acc) ((y,ys),_) =
@@ -97,9 +106,11 @@ let compute_all_sym_diff xs =
     else acc
   in
   let get_fst _ x _ = Some x in
-  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
   let neutral = (HSet.empty, HMap.empty) in
-  map_fold_ac ~f:(fun x -> List.fold_left (aux x) neutral xs) ~fold neutral xs
+  let map xs' = List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) neutral xs' in
+  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
+  map_fold_ac ~f:map
+    ~fold neutral cored
 
 let dist semimetric x y =
   let rec aux x y =
@@ -179,7 +190,7 @@ let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) lis
   let start,single =
     partition_map
       (fun x -> x) (fun (_,x) -> Leaf x) (fun ((_,xs),_) -> match xs with | [_] -> false | _ -> true) start in
-  let was_seen,tbl = compute_all_sym_diff start in
+  let was_seen,tbl = compute_all_sym_diff cores start in
   let (start, alone) =
     partition_map
       (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> HSet.mem x was_seen) start in
