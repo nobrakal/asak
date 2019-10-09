@@ -210,10 +210,7 @@ let hash_all config hard_weight xs =
   let threshold = Hard hard_weight in
   let all_hashs =
     List.map
-      (fun (name_prefixed,_id,x) ->
-        let (main_hash,leaves_hashs) = hash_lambda config threshold x in
-        (name_prefixed, (main_hash,leaves_hashs))
-      )
+      (fun (name_prefixed,_id,x) -> (name_prefixed, hash_lambda config threshold x))
       xs
   in all_hashs
 
