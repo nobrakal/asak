@@ -83,14 +83,14 @@ module HSet = Set.Make(Hash)
  *)
 let compute_all_sym_diff cores xs =
   let len = List.length xs in
-  let nb_per_cores = len / cores in
-  let (_,xs,cored) =
+  let nb_per_cores = max 1 (len / cores) in
+  let (_,left,cored) =
     List.fold_left
       (fun (i,xs,acc) x ->
         if i mod nb_per_cores = 0
         then 1,[x],(xs::acc)
         else i+1,x::xs,acc) (1,[],[]) xs in
-  let cored = xs::cored in
+  let cored = left::cored in
   let update_was_seen was_seen x y =
     HSet.add x (HSet.add y was_seen) in
   let aux ((x,xs),_) ((was_seen,res) as acc) ((y,ys),_) =
