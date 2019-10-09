@@ -63,28 +63,38 @@ let semimetric x y =
   | None -> Infinity
   | Some diff -> Regular (sum_of_fst diff)
 
+module Hash =
+  struct
+    type t = int * string
+    let compare = compare
+  end
+
+module HashPairs =
+  struct
+    type t = Hash.t * Hash.t
+    let compare = compare
+  end
+
+module HMap = Map.Make(HashPairs)
+module HSet = Set.Make(Hash)
+
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
  *)
 let compute_all_sym_diff xs =
-  let len = List.length xs in
-  let res = Hashtbl.create len in
-  let was_seen = Hashtbl.create len in
-  let update_was_seen x y =
-    Hashtbl.add was_seen x ();
-    Hashtbl.add was_seen y (); in
-  let aux ((x,xs),_) ((y,ys),_) =
+  let update_was_seen was_seen x y =
+    HSet.add x (HSet.add y was_seen) in
+  let aux ((x,xs),_) ((was_seen,res) as acc) ((y,ys),_) =
     if x < y
     then
       match semimetric xs ys with
-      | Infinity -> ()
+      | Infinity -> acc
       | Regular dist ->
-         update_was_seen x y;
-         Hashtbl.add res (x,y) dist
-    else ()
+         update_was_seen was_seen x y,
+         HMap.add (x,y) dist res
+    else acc
   in
-  List.iter (fun x -> List.iter (aux x) xs) xs;
-  was_seen,res
+  List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) (HSet.empty, HMap.empty) xs
 
 let dist semimetric x y =
   let rec aux x y =
@@ -140,9 +150,7 @@ let partition_map f g p l =
 let semimetric_from tbl x y =
   try
     let value =
-      if x < y
-      then Hashtbl.find tbl (x,y)
-      else Hashtbl.find tbl (y,x) in
+      HMap.find (if x < y then (x,y) else (y,x)) tbl in
     Distance.Regular value
   with Not_found -> Distance.Infinity
 
@@ -168,7 +176,7 @@ let cluster (hash_list : ('a * ((int * string) * (int * string) list)) list) =
   let was_seen,tbl = compute_all_sym_diff start in
   let (start, alone) =
     partition_map
-      (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> Hashtbl.mem was_seen x) start in
+      (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> HSet.mem x was_seen) start in
   let dendrogram_list = compute_with tbl start in
   let cluster =
     List.sort
