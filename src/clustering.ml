@@ -103,11 +103,11 @@ let compute_all_sym_diff cores xs =
          HMap.add (x,y) dist res
     else acc
   in
-  let oops _ _ _ = assert false in
+  let get_fst _ x _ = Some x in
   let neutral = (HSet.empty, HMap.empty) in
   let map xs' = List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) neutral xs' in
-  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union oops y1 y2 in
-  List.fold_left fold neutral @@ Parmap.parmap ~ncores:cores ~chunksize:1 map (Parmap.L cored)
+  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
+  List.fold_left fold neutral @@ Parmap.parmap ~ncores:cores ~chunksize:1  map (Parmap.L cored)
 
 let dist semimetric x y =
   let rec aux x y =
@@ -136,12 +136,12 @@ let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
   (Node (p,u,v))::xs
 
-module FullHash = struct
-  type t = Hash.t * Hash.t list
+module Elem = struct
+  type t = (int * string) * (int * string) list
   let compare = compare
 end
 
-module Cluster = Map.Make(FullHash)
+module Cluster = Map.Make(Elem)
 
 let add_in_cluster map (x,xs) =
   match Cluster.find_opt xs map with
@@ -180,17 +180,17 @@ let compute_with tbl =
 
 let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) list) =
   let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
-  let start : (FullHash.t * 'a list) list =
+  let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
-  let (start,single) : (FullHash.t * 'a list) list * 'a list wtree list =
+  let start,single =
     partition_map
       (fun x -> x) (fun (_,x) -> Leaf x) (fun ((_,xs),_) -> match xs with | [_] -> false | _ -> true) start in
   let was_seen,tbl = compute_all_sym_diff cores start in
-  let (start, alone) : (Hash.t * 'a list) wtree list * 'a list wtree list =
+  let (start, alone) =
     partition_map
       (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> HSet.mem x was_seen) start in
-  let dendrogram_list : (Hash.t * 'a list) wtree list = compute_with tbl start in
+  let dendrogram_list = compute_with tbl start in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
