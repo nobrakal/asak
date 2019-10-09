@@ -43,4 +43,4 @@ let parse_all_implementations hard_weight files_list =
 
 let search hard_weight files_list =
   let all_hashs = parse_all_implementations hard_weight files_list in
-  Clustering.cluster all_hashs
+  Clustering.cluster 1 all_hashs

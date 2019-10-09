@@ -1,5 +1,5 @@
 (library
  (public_name asak)
  (name asak)
- (libraries str compiler-libs.common)
+ (libraries str compiler-libs.common functory)
  (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file}))))

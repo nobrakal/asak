@@ -52,7 +52,7 @@ val dist :
 
     The list is sorted with biggest trees first.
  *)
-val cluster : ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
+val cluster : int -> ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
 
 (** Print recursively a cluster given a printer for the labels. *)
 val print_cluster : ('a -> string) -> ('a list) wtree list -> unit

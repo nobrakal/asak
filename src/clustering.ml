@@ -7,6 +7,8 @@
 
 open Wtree
 
+open Functory.Cores
+
 module Distance = struct
 
   type t = Regular of int | Infinity
@@ -94,7 +96,10 @@ let compute_all_sym_diff xs =
          HMap.add (x,y) dist res
     else acc
   in
-  List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) (HSet.empty, HMap.empty) xs
+  let get_fst _ x _ = Some x in
+  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
+  let neutral = (HSet.empty, HMap.empty) in
+  map_fold_ac ~f:(fun x -> List.fold_left (aux x) neutral xs) ~fold neutral xs
 
 let dist semimetric x y =
   let rec aux x y =
@@ -165,7 +170,8 @@ let compute_with tbl =
      | Regular p -> compute (merge p u v lst)
   in compute
 
-let cluster (hash_list : ('a * ((int * string) * (int * string) list)) list) =
+let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) list) =
+  set_number_of_cores cores;
   let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
