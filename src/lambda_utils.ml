@@ -217,7 +217,8 @@ let hash_all config hard_weight xs =
       xs
   in all_hashs
 
-let escape_hash_list xs = List.map (fun (name,xs) -> name,List.map (fun (p,h) -> p,String.escaped h) xs) xs
+let escape_hash_list xs =
+  List.map (fun (name,((p,h),xs)) -> name,((p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs)) xs
 
 let fold_lambda lvar llet =
   let rec aux expr =
