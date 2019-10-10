@@ -28,7 +28,7 @@ let print_infos (classes : string list wtree list) csvfile =
   let nb_classes = List.length classes in
   Printf.printf "Number of classes: %d\n" nb_classes;
   let real_class =
-    List.filter (function | Leaf _ -> false | _ -> true)
+    List.filter (function | Leaf [] | Leaf [_] -> false | _ -> true)
       classes in
   let nb_real_class = List.length real_class in
   Printf.printf "Number of classes with (strictly) more than one element: %d\n"
