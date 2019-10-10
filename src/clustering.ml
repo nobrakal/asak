@@ -75,8 +75,8 @@ module HashPairs =
     let compare = compare
   end
 
-module HMap = Map.Make(HashPairs)
-module HSet = Set.Make(Hash)
+module HPMap = Map.Make(HashPairs)
+module HMap = Map.Make(Hash)
 
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
@@ -91,28 +91,25 @@ let compute_all_sym_diff cores xs =
         then 1,[x],(xs::acc)
         else i+1,x::xs,acc) (1,[],[]) xs in
   let cored = left::cored in
-  let update_was_seen was_seen x y =
-    HSet.add x (HSet.add y was_seen) in
-  let aux ((x,xs),_) ((was_seen,res) as acc) ((y,ys),_) =
+  let aux ((x,xs),_) acc ((y,ys),_) =
     if x < y
     then
       match semimetric xs ys with
       | Infinity -> acc
       | Regular dist ->
-         update_was_seen was_seen x y,
-         HMap.add (x,y) dist res
+         HPMap.add (x,y) dist acc
     else acc
   in
   let get_fst _ x _ = Some x in
-  let neutral = (HSet.empty, HMap.empty) in
+  let neutral = HPMap.empty in
   let map xs' = List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) neutral xs' in
-  let fold (x1,y1) (x2,y2) = HSet.union x1 x2, HMap.union get_fst y1 y2 in
+  let fold =  HPMap.union get_fst in
   List.fold_left fold neutral @@ Parmap.parmap ~ncores:cores ~chunksize:1  map (Parmap.L cored)
 
 let dist semimetric x y =
   let rec aux x y =
     match x,y with
-    | Leaf (x,_), Leaf (y,_) -> semimetric x y
+    | Leaf x, Leaf y -> semimetric x y
     | Node (_,u,v), l | l, Node (_,u,v) ->
        let open Distance in
        match aux u l with
@@ -148,11 +145,6 @@ let add_in_cluster map (x,xs) =
   | None -> Cluster.add xs [x] map
   | Some ys -> Cluster.add xs (x::ys) map
 
-let remove_fst_in_tree t =
-  fold_tree
-    (fun p u v -> Node (p, u, v))
-    (fun (_,x) -> Leaf x) t
-
 let partition_map f g p l =
   let rec part yes no = function
   | [] -> (yes, no)
@@ -163,39 +155,72 @@ let partition_map f g p l =
 let semimetric_from tbl x y =
   try
     let value =
-      HMap.find (if x < y then (x,y) else (y,x)) tbl in
+      HPMap.find (if x < y then (x,y) else (y,x)) tbl in
     Distance.Regular value
   with Not_found -> Distance.Infinity
 
-let compute_with tbl =
-  let rec compute = function
-  | [] -> []
-  | [x] -> [x]
+(* Create a partition where xRy <=> \exists x_i, x_0=x x_n=y \and dist x_i y_{i+1} < Infinity
+   (Transitive closure)
+*)
+let create_possible_classes tbl xs =
+  let xs = List.map UnionFind.make xs in
+  List.iter
+    (fun x ->
+      let x' = UnionFind.get x in
+      List.iter
+        (fun y ->
+          let y' = UnionFind.get y in
+          if x' < y'
+          then
+            try
+              if HPMap.mem (x',y') tbl
+              then let _ = UnionFind.union x y in ()
+            with | Not_found -> ()
+        ) xs
+    ) xs;
+  let m = List.fold_left
+    (fun m x ->
+      let repr = UnionFind.(get (find x)) in
+      let x = Leaf (UnionFind.get x) in
+      try
+        let xs = HMap.find repr m in
+        HMap.add repr (x::xs) m
+        with | Not_found -> HMap.add repr [x] m
+    ) HMap.empty xs in
+  HMap.fold (fun _ xs acc -> xs::acc) m []
+
+let compute_with tbl (xs : Hash.t wtree list list) =
+  let rec compute acc = function
+  | [] -> acc
+  | [x] -> x::acc
   | x::y::_ as lst ->
      let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
      match p with
-     | Infinity -> lst
-     | Regular p -> compute (merge p u v lst)
-  in compute
+     | Infinity -> lst@acc
+     | Regular p -> compute acc (merge p u v lst)
+  in
+  List.fold_left compute [] xs
 
-let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) list) =
+let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
-  let start,single =
+  let start,single = (* If I don't have sub-hashes, I am single and will be infinitely distant from everyone. *)
     partition_map
       (fun x -> x) (fun (_,x) -> Leaf x) (fun ((_,xs),_) -> match xs with | [_] -> false | _ -> true) start in
-  let was_seen,tbl = compute_all_sym_diff cores start in
-  let (start, alone) =
-    partition_map
-      (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> HSet.mem x was_seen) start in
-  let dendrogram_list = compute_with tbl start in
+  let tbl = compute_all_sym_diff cores start in
+  let lst,hm = (* We now only need the main_hash *)
+    List.fold_left (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
+      ([],HMap.empty) start in
+  let create_leaf k = Leaf (HMap.find k hm) in
+  let lst = create_possible_classes tbl lst in (* Create possible classes *)
+  let dendrogram_list : Hash.t wtree list = compute_with tbl lst in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
-      (List.map remove_fst_in_tree dendrogram_list) in
-  cluster @ alone @ single
+      (List.map (fold_tree (fun a b c -> Node (a,b,c)) create_leaf) dendrogram_list) in
+  cluster @ single
 
 let print_cluster show cluster =
   let rec aux i = function
