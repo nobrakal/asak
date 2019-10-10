@@ -44,21 +44,10 @@ let print_infos (classes : string list wtree list) csvfile =
   output_string chan plot;
   close_out chan
 
-let print_infos_without_versions (before_clustering : string list wtree list) csvfile =
-  let class_with_only_lib_name =
-    List.rev_map
-      (fold_tree
-         (fun a b c -> Node (a,b,c))
-         (fun xs -> Leaf (List.sort_uniq compare @@ List.rev_map get_prefix xs)))
-      before_clustering in
-  print_infos class_with_only_lib_name csvfile
-
 let main filename csvfile =
   let chan = open_in_bin filename in
   let all_cluster : (string list) wtree list = Marshal.from_channel chan in
   print_endline "When considering different versions of the same package:";
-  print_infos all_cluster (csvfile ^ "all.csv");
-  print_endline "When considering only one time a given definition for a given package:";
-  print_infos_without_versions all_cluster (csvfile ^ "uniq.csv")
+  print_infos all_cluster (csvfile ^ "all.csv")
 
 let () = main Sys.argv.(1) Sys.argv.(2)
