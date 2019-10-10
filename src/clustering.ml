@@ -78,7 +78,10 @@ module HashPairs =
 module HMap = Map.Make(HashPairs)
 module HSet = Set.Make(Hash)
 
-let split_by_cores cores xs =
+(* NB: the returned hashtable contains only keys (x,y) where x < y.
+   This is not a problem since the distance is symmetric.
+ *)
+let compute_all_sym_diff cores xs =
   let len = List.length xs in
   let nb_per_cores = max 1 (len / cores) in
   let (_,left,cored) =
@@ -87,13 +90,7 @@ let split_by_cores cores xs =
         if i mod nb_per_cores = 0
         then 1,[x],(xs::acc)
         else i+1,x::xs,acc) (1,[],[]) xs in
-  left::cored
-
-(* NB: the returned hashtable contains only keys (x,y) where x < y.
-   This is not a problem since the distance is symmetric.
- *)
-let compute_all_sym_diff cores xs =
-  let cored = split_by_cores cores xs in
+  let cored = left::cored in
   let update_was_seen was_seen x y =
     HSet.add x (HSet.add y was_seen) in
   let aux ((x,xs),_) ((was_seen,res) as acc) ((y,ys),_) =
@@ -123,24 +120,17 @@ let dist semimetric x y =
        | x -> max x (aux v l)
   in aux x y
 
-let get_min_dist cores semimetric x y xs =
-  let cored = split_by_cores cores xs in
-  let neutral = (dist semimetric x y, (x,y)) in
-  let get_min u v =
-    if Distance.lt (fst u) (fst v)
-    then u
-    else v in
-  let map xs' =
-    List.fold_left
-      (fun min x ->
-        List.fold_left
-          (fun min y ->
-            let d = dist semimetric x y in
-            get_min min (d,(x,y))
-          ) min xs
-      ) neutral xs' in
-  List.fold_left get_min neutral @@
-    Parmap.parmap ~ncores:cores ~chunksize:1  map (Parmap.L cored)
+let get_min_dist semimetric x y xs =
+  List.fold_left
+    (fun min x ->
+      List.fold_left
+        (fun min y ->
+          let d = dist semimetric x y in
+          if Distance.lt d (fst min)
+          then (d,(x,y))
+          else min
+        ) min xs
+    ) (dist semimetric x y, (x,y)) xs
 
 let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
@@ -177,12 +167,12 @@ let semimetric_from tbl x y =
     Distance.Regular value
   with Not_found -> Distance.Infinity
 
-let compute_with cores tbl =
+let compute_with tbl =
   let rec compute = function
   | [] -> []
   | [x] -> [x]
   | x::y::_ as lst ->
-     let (p, (u,v)) = get_min_dist cores (semimetric_from tbl) x y lst in
+     let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
      match p with
      | Infinity -> lst
      | Regular p -> compute (merge p u v lst)
@@ -200,7 +190,7 @@ let cluster cores (hash_list : ('a * ((int * string) * (int * string) list)) lis
   let (start, alone) =
     partition_map
       (fun ((x,_),xs) -> Leaf (x,xs)) (fun (_,x) -> Leaf x) (fun ((x,_),_) -> HSet.mem x was_seen) start in
-  let dendrogram_list = compute_with cores tbl start in
+  let dendrogram_list = compute_with tbl start in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
