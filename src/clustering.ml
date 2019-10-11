@@ -207,9 +207,6 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let start =
     let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
     Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
-  let start,single = (* If I don't have sub-hashes, I am single and will be infinitely distant from everyone. *)
-    partition_map
-      (fun x -> x) (fun (_,x) -> Leaf x) (fun ((_,xs),_) -> match xs with | [_] -> false | _ -> true) start in
   let tbl = compute_all_sym_diff cores start in
   let lst,hm = (* We now only need the main_hash *)
     List.fold_left (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
@@ -221,7 +218,7 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
       (List.map (fold_tree (fun a b c -> Node (a,b,c)) create_leaf) dendrogram_list) in
-  cluster @ single
+  cluster
 
 let print_cluster show cluster =
   let rec aux i = function
