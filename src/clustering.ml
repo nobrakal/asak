@@ -146,13 +146,6 @@ let add_in_cluster map (x,xs) =
   | None -> Cluster.add xs [x] map
   | Some ys -> Cluster.add xs (x::ys) map
 
-let partition_map f g p l =
-  let rec part yes no = function
-  | [] -> (yes, no)
-  | x :: l ->
-     if p x then part (f x :: yes) no l else part yes (g x :: no) l in
-  part [] [] l
-
 let semimetric_from tbl x y =
   try
     let value =
