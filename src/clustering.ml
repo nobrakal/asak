@@ -118,6 +118,7 @@ let dist semimetric x y =
   in aux x y
 
 let get_min_dist semimetric x y xs =
+  let xs = x::y::xs in
   List.fold_left
     (fun min x ->
       List.fold_left
