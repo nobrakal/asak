@@ -89,7 +89,7 @@ let split_by_cores cores xs =
         else i+1,x::xs,acc) (1,[],[]) xs in
   left::cored
 
-let add_if_non_inf ((x,xs),_) acc ((y,ys),_) =
+let add_if_non_inf (x,xs) acc (y,ys) =
   if x < y
   then
     match semimetric xs ys with
@@ -212,11 +212,12 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let sorted_hash_list =
     List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start = create_start_cluster sorted_hash_list in
-  let tbl = compute_all_sym_diff cores start in
-  let lst,hm = (* We now only need the main_hash *)
+  let start,hm = (* We save the associaition main_hash ident *)
     List.fold_left
-      (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
+      (fun (acc,m) ((main_hash,_) as e,xs) -> e::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
+  let tbl = compute_all_sym_diff cores start in
+  let lst = List.rev_map fst start in (* now we only need the main hash *)
   let create_leaf k = Leaf (HMap.find k hm) in
   let lst = create_possible_classes tbl lst in (* Create possible classes *)
   let lst = List.map (List.map (fun x -> Leaf x)) lst in
