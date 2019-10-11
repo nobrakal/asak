@@ -78,10 +78,7 @@ module HashPairs =
 module HPMap = Map.Make(HashPairs)
 module HMap = Map.Make(Hash)
 
-(* NB: the returned hashtable contains only keys (x,y) where x < y.
-   This is not a problem since the distance is symmetric.
- *)
-let compute_all_sym_diff cores xs =
+let split_by_cores cores xs =
   let len = List.length xs in
   let nb_per_cores = max 1 (len / cores) in
   let (_,left,cored) =
@@ -90,21 +87,29 @@ let compute_all_sym_diff cores xs =
         if i mod nb_per_cores = 0
         then 1,[x],(xs::acc)
         else i+1,x::xs,acc) (1,[],[]) xs in
-  let cored = left::cored in
-  let aux ((x,xs),_) acc ((y,ys),_) =
-    if x < y
-    then
-      match semimetric xs ys with
-      | Infinity -> acc
-      | Regular dist ->
-         HPMap.add (x,y) dist acc
-    else acc
-  in
+  left::cored
+
+let add_if_non_inf ((x,xs),_) acc ((y,ys),_) =
+  if x < y
+  then
+    match semimetric xs ys with
+    | Infinity -> acc
+    | Regular dist ->
+       HPMap.add (x,y) dist acc
+  else acc
+
+(* NB: the returned hashtable contains only keys (x,y) where x < y.
+   This is not a problem since the distance is symmetric.
+ *)
+let compute_all_sym_diff cores xs =
+  let cored = split_by_cores cores xs in
   let get_fst _ x _ = Some x in
-  let neutral = HPMap.empty in
-  let map xs' = List.fold_left (fun acc x -> List.fold_left (aux x) acc xs) neutral xs' in
+  let map xs' =
+    List.fold_left
+      (fun acc x -> List.fold_left (add_if_non_inf x) acc xs) HPMap.empty xs' in
   let fold =  HPMap.union get_fst in
-  List.fold_left fold neutral @@ Parmap.parmap ~ncores:cores ~chunksize:1  map (Parmap.L cored)
+  List.fold_left fold HPMap.empty @@
+    Parmap.parmap ~ncores:cores ~chunksize:1 map (Parmap.L cored)
 
 let dist semimetric x y =
   let rec aux x y =
@@ -209,7 +214,8 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let start = create_start_cluster sorted_hash_list in
   let tbl = compute_all_sym_diff cores start in
   let lst,hm = (* We now only need the main_hash *)
-    List.fold_left (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
+    List.fold_left
+      (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k hm) in
   let lst = create_possible_classes tbl lst in (* Create possible classes *)
