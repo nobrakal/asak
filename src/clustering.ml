@@ -142,18 +142,6 @@ let merge p u v xs =
   let xs = List.filter (fun x -> x != u && x != v) xs in
   (Node (p,u,v))::xs
 
-module Elem = struct
-  type t = (int * string) * (int * string) list
-  let compare = compare
-end
-
-module Cluster = Map.Make(Elem)
-
-let add_in_cluster map (x,xs) =
-  match Cluster.find_opt xs map with
-  | None -> Cluster.add xs [x] map
-  | Some ys -> Cluster.add xs (x::ys) map
-
 let semimetric_from tbl x y =
   try
     let value =
@@ -167,30 +155,28 @@ let iter_on_cart_prod f xs =
 let classes_of_uf xs =
   let m =
     List.fold_left
-      (fun m x ->
-        let repr = UnionFind.(get (find x)) in
+      (fun m (x',x) ->
         let x = UnionFind.get x in
         try
-          let xs = HMap.find repr m in
-          HMap.add repr (x::xs) m
-        with | Not_found -> HMap.add repr [x] m
+          let xs = HMap.find x m in
+          HMap.add x (x'::xs) m
+        with | Not_found -> HMap.add x [x'] m
       ) HMap.empty xs in
   HMap.fold (fun _ xs acc -> xs::acc) m []
 
 (* Create a partition where xRy <=> \exists x_i, x_0=x x_n=y \and dist x_i y_{i+1} < Infinity
    (Transitive closure)
-*)
+ *)
 let create_possible_classes tbl xs =
-  let xs = List.map UnionFind.make xs in
-  let try_to_merge x y =
-    let x' = UnionFind.get x in
-    let y' = UnionFind.get y in
+  let xs' = List.map (fun x -> x, UnionFind.make x) xs in
+  let try_to_merge (x',x) (y',y) =
     if x' < y'
     then
       if HPMap.mem (x',y') tbl
       then let _ = UnionFind.union x y in () in
-  iter_on_cart_prod try_to_merge xs;
-  classes_of_uf xs
+  iter_on_cart_prod try_to_merge xs';
+  classes_of_uf xs'
+
 
 let refine_class tbl (xs : Hash.t wtree list) =
   let rec compute xs =
@@ -207,9 +193,14 @@ let compute_with tbl (xs : Hash.t wtree list list) =
   let rafine_class = refine_class tbl in
   List.rev_map rafine_class xs
 
+let add_in_cluster map (x,(h,xs)) =
+  match HMap.find_opt h map with
+  | None -> HMap.add h (xs,[x]) map
+  | Some (_,ys) -> HMap.add h (xs,x::ys) map
+
 let create_start_cluster sorted_hash_list =
-  let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
-  Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] 
+  let cluster = List.fold_left add_in_cluster HMap.empty sorted_hash_list in
+  HMap.fold (fun k xs acc -> (k,xs)::acc) cluster []
 
 let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let sorted_hash_list =
@@ -217,7 +208,7 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let start = create_start_cluster sorted_hash_list in
   let start,hm = (* We save the associaition main_hash ident *)
     List.fold_left
-      (fun (acc,m) ((main_hash,_) as e,xs) -> e::acc,HMap.add main_hash xs m)
+      (fun (acc,m) (main_hash,(lst,xs)) -> (main_hash,lst)::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k hm) in
   let was_seen,tbl = compute_all_sym_diff cores start in
