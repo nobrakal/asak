@@ -179,10 +179,8 @@ let create_possible_classes tbl xs =
     let y' = UnionFind.get y in
     if x' < y'
     then
-      try
-        if HPMap.mem (x',y') tbl
-        then let _ = UnionFind.union x y in ()
-      with | Not_found -> () in
+      if HPMap.mem (x',y') tbl
+      then let _ = UnionFind.union x y in () in
   iter_on_cart_prod try_to_merge xs;
   classes_of_uf xs
 
