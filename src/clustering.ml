@@ -77,6 +77,7 @@ module HashPairs =
 
 module HPMap = Map.Make(HashPairs)
 module HMap = Map.Make(Hash)
+module HSet = Set.Make(Hash)
 
 let split_by_cores cores xs =
   let len = List.length xs in
@@ -89,13 +90,14 @@ let split_by_cores cores xs =
         else i+1,x::xs,acc) (1,[],[]) xs in
   left::cored
 
-let add_if_non_inf (x,xs) acc (y,ys) =
+let add_if_non_inf (x,xs) ((s,m) as acc) (y,ys) =
   if x < y
   then
     match semimetric xs ys with
     | Infinity -> acc
     | Regular dist ->
-       HPMap.add (x,y) dist acc
+       HSet.add x (HSet.add y s),
+       HPMap.add (x,y) dist m
   else acc
 
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
@@ -104,11 +106,12 @@ let add_if_non_inf (x,xs) acc (y,ys) =
 let compute_all_sym_diff cores xs =
   let cored = split_by_cores cores xs in
   let get_fst _ x _ = Some x in
+  let neutral = (HSet.empty, HPMap.empty) in
   let map xs' =
     List.fold_left
-      (fun acc x -> List.fold_left (add_if_non_inf x) acc xs) HPMap.empty xs' in
-  let fold =  HPMap.union get_fst in
-  List.fold_left fold HPMap.empty @@
+      (fun acc x -> List.fold_left (add_if_non_inf x) acc xs) neutral xs' in
+  let fold (s1,m1) (s2,m2) = HSet.union s1 s2, HPMap.union get_fst m1 m2 in
+  List.fold_left fold neutral @@
     Parmap.parmap ~ncores:cores ~chunksize:1 map (Parmap.L cored)
 
 let dist semimetric x y =
@@ -216,9 +219,11 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
     List.fold_left
       (fun (acc,m) ((main_hash,_) as e,xs) -> e::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
-  let tbl = compute_all_sym_diff cores start in
-  let lst = List.rev_map fst start in (* now we only need the main hash *)
   let create_leaf k = Leaf (HMap.find k hm) in
+  let was_seen,tbl = compute_all_sym_diff cores start in
+  let lst = List.rev_map fst start in (* now we only need the main hash *)
+  let lst,alone = List.partition (fun x -> HSet.mem x was_seen) lst in
+  let alone = List.rev_map create_leaf alone in
   let lst = create_possible_classes tbl lst in (* Create possible classes *)
   let lst = List.map (List.map (fun x -> Leaf x)) lst in
   let refined_classes = compute_with tbl lst in
@@ -228,7 +233,7 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
       (List.map (fold_tree (fun a b c -> Node (a,b,c)) create_leaf) dendrogram_list) in
-  cluster
+  cluster @ alone
 
 let print_cluster show cluster =
   let rec aux i = function
