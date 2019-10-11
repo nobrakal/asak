@@ -153,60 +153,72 @@ let semimetric_from tbl x y =
     Distance.Regular value
   with Not_found -> Distance.Infinity
 
+let iter_on_cart_prod f xs =
+  List.iter (fun x -> List.iter (f x) xs) xs
+
+let classes_of_uf xs =
+  let m =
+    List.fold_left
+      (fun m x ->
+        let repr = UnionFind.(get (find x)) in
+        let x = UnionFind.get x in
+        try
+          let xs = HMap.find repr m in
+          HMap.add repr (x::xs) m
+        with | Not_found -> HMap.add repr [x] m
+      ) HMap.empty xs in
+  HMap.fold (fun _ xs acc -> xs::acc) m []
+
 (* Create a partition where xRy <=> \exists x_i, x_0=x x_n=y \and dist x_i y_{i+1} < Infinity
    (Transitive closure)
 *)
 let create_possible_classes tbl xs =
   let xs = List.map UnionFind.make xs in
-  List.iter
-    (fun x ->
-      let x' = UnionFind.get x in
-      List.iter
-        (fun y ->
-          let y' = UnionFind.get y in
-          if x' < y'
-          then
-            try
-              if HPMap.mem (x',y') tbl
-              then let _ = UnionFind.union x y in ()
-            with | Not_found -> ()
-        ) xs
-    ) xs;
-  let m = List.fold_left
-    (fun m x ->
-      let repr = UnionFind.(get (find x)) in
-      let x = Leaf (UnionFind.get x) in
+  let try_to_merge x y =
+    let x' = UnionFind.get x in
+    let y' = UnionFind.get y in
+    if x' < y'
+    then
       try
-        let xs = HMap.find repr m in
-        HMap.add repr (x::xs) m
-        with | Not_found -> HMap.add repr [x] m
-    ) HMap.empty xs in
-  HMap.fold (fun _ xs acc -> xs::acc) m []
+        if HPMap.mem (x',y') tbl
+        then let _ = UnionFind.union x y in ()
+      with | Not_found -> () in
+  iter_on_cart_prod try_to_merge xs;
+  classes_of_uf xs
+
+let refine_class tbl (xs : Hash.t wtree list) =
+  let rec compute xs =
+    match xs with
+    | [] | [_] -> xs
+    | x::y::_ as lst ->
+       let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
+       match p with
+       | Infinity -> lst
+       | Regular p -> compute (merge p u v lst)
+  in compute xs
 
 let compute_with tbl (xs : Hash.t wtree list list) =
-  let rec compute acc = function
-  | [] -> acc
-  | [x] -> x::acc
-  | x::y::_ as lst ->
-     let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
-     match p with
-     | Infinity -> lst@acc
-     | Regular p -> compute acc (merge p u v lst)
-  in
-  List.fold_left compute [] xs
+  let rafine_class = refine_class tbl in
+  List.rev_map rafine_class xs
+
+let create_start_cluster sorted_hash_list =
+  let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
+  Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] 
 
 let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
-  let sorted_hash_list = List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
-  let start =
-    let cluster = List.fold_left add_in_cluster Cluster.empty sorted_hash_list in
-    Cluster.fold (fun k xs acc -> (k,xs)::acc) cluster [] in
+  let sorted_hash_list =
+    List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
+  let start = create_start_cluster sorted_hash_list in
   let tbl = compute_all_sym_diff cores start in
   let lst,hm = (* We now only need the main_hash *)
     List.fold_left (fun (acc,m) ((main_hash,_),xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k hm) in
   let lst = create_possible_classes tbl lst in (* Create possible classes *)
-  let dendrogram_list : Hash.t wtree list = compute_with tbl lst in
+  let lst = List.map (List.map (fun x -> Leaf x)) lst in
+  let refined_classes = compute_with tbl lst in
+  let dendrogram_list =
+    List.fold_left (fun acc cl -> List.rev_append cl acc) [] refined_classes in
   let cluster =
     List.sort
       (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
