@@ -14,14 +14,12 @@ type config =
     hash_var : bool; (** If we hash names in the AST. *)
   }
 
-(** Hash a lambda expression. Usage: [hash_lambda config threshold let_bindings expr].
+(** Hash a lambda expression. Usage: [hash_lambda config threshold expr].
     Two lambda expressions "of the same shape" will share the same hash.
 
     @param config A configuration for the function.
 
-    @param threshold Used to decide which sub-AST's hash is kept.
-
-    @param let_bindings Associative list of names and previously computed hashs.
+    @param threshold Used to decide which sub-AST hash is kept.
 
     @param expr The expression.
 
@@ -33,8 +31,7 @@ val hash_lambda :
   threshold ->
   Lambda.lambda -> (int * string) * (int * string) list
 
-(** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }.
-*)
+(** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }. *)
 val hash_all :
   config ->
   int ->
