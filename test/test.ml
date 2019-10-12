@@ -18,7 +18,7 @@ let get_last_lambda_of_str str =
   match Parse_structure.read_string str with
   | [] -> failwith "empty"
   | x::xs ->
-     let (_,_,lst) = last x xs in
+     let (_,lst) = last x xs in
      lst
 
 let testable_hash =
