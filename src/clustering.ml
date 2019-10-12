@@ -164,10 +164,10 @@ let classes_of_uf xs =
       ) HMap.empty xs in
   HMap.fold (fun _ xs acc -> xs::acc) m []
 
-(* Create a partition where xRy <=> \exists x_i, x_0=x x_n=y \and dist x_i y_{i+1} < Infinity
-   (Transitive closure)
+(* Surapproximate classes by using the transitive closure of xRy <=> dist x y < Infinity.
+   If not (xRy) => dist x y = Infinity, thus x and y cannot be in the same class.
  *)
-let create_possible_classes tbl xs =
+let surapproximate_classes tbl xs =
   let xs' = List.map (fun x -> x, UnionFind.make x) xs in
   let try_to_merge (x',x) (y',y) =
     if x' < y'
@@ -177,19 +177,19 @@ let create_possible_classes tbl xs =
   iter_on_cart_prod try_to_merge xs';
   classes_of_uf xs'
 
-
+(* Compute a hierarchical clustering *)
 let refine_class tbl (xs : Hash.t wtree list) =
   let rec compute xs =
     match xs with
     | [] | [_] -> xs
-    | x::y::_ as lst ->
-       let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y lst in
+    | x::y::_  ->
+       let (p, (u,v)) = get_min_dist (semimetric_from tbl) x y xs in
        match p with
-       | Infinity -> lst
-       | Regular p -> compute (merge p u v lst)
+       | Infinity -> xs
+       | Regular p -> compute (merge p u v xs)
   in compute xs
 
-let compute_with tbl (xs : Hash.t wtree list list) =
+let hierarchical_clustering tbl (xs : Hash.t wtree list list) =
   let rafine_class = refine_class tbl in
   List.rev_map rafine_class xs
 
@@ -202,29 +202,31 @@ let create_start_cluster sorted_hash_list =
   let cluster = List.fold_left add_in_cluster HMap.empty sorted_hash_list in
   HMap.fold (fun k xs acc -> (k,xs)::acc) cluster []
 
+let compare_size_of_trees x y =
+  compare (size_of_tree List.length x) (size_of_tree List.length y)
+
 let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let sorted_hash_list =
     List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start = create_start_cluster sorted_hash_list in
-  let start,hm = (* We save the associaition main_hash ident *)
+  let start,assoc_hash_ident_list =
     List.fold_left
       (fun (acc,m) (main_hash,(lst,xs)) -> (main_hash,lst)::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
-  let create_leaf k = Leaf (HMap.find k hm) in
-  let was_seen,tbl = compute_all_sym_diff cores start in
-  let lst = List.rev_map fst start in (* now we only need the main hash *)
+  let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
+  let was_seen,distance_matrix = compute_all_sym_diff cores start in
+  let lst = List.map fst start in
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) lst in
-  let alone = List.rev_map create_leaf alone in
-  let lst = create_possible_classes tbl lst in (* Create possible classes *)
-  let lst = List.map (List.map (fun x -> Leaf x)) lst in
-  let refined_classes = compute_with tbl lst in
+  let surapprox = surapproximate_classes distance_matrix lst in
+  let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
+  let refined_classes = hierarchical_clustering distance_matrix surapprox in
   let dendrogram_list =
     List.fold_left (fun acc cl -> List.rev_append cl acc) [] refined_classes in
   let cluster =
     List.sort
-      (fun x y -> - compare (size_of_tree List.length x) (size_of_tree List.length y))
+      (fun x y -> - (compare_size_of_trees x y))
       (List.map (fold_tree (fun a b c -> Node (a,b,c)) create_leaf) dendrogram_list) in
-  cluster @ alone
+  cluster @ (List.rev_map create_leaf alone)
 
 let print_cluster show cluster =
   let rec aux i = function
