@@ -1,10 +1,17 @@
 open Asak.Wtree
 
-let get_prefix x =
+let remove_version x =
   try
     let ind = String.index x '.' in
-    String.(sub x 0 ind)
+    let indtd = String.index x ':' in
+    String.sub x 0 ind ^ String.sub x indtd (String.length x - indtd )
   with | Not_found -> x
+
+let remove_version_all =
+  List.rev_map
+    (fold_tree
+       (fun a b c -> Node (a,b,c))
+       (fun xs -> Leaf (List.sort_uniq compare (List.rev_map remove_version xs))))
 
 let sum xs = List.fold_left ( + ) 0 xs
 
@@ -48,6 +55,8 @@ let main filename csvfile =
   let chan = open_in_bin filename in
   let all_cluster : (string list) wtree list = Marshal.from_channel chan in
   print_endline "When considering different versions of the same package:";
-  print_infos all_cluster (csvfile ^ "all.csv")
+  print_infos all_cluster (csvfile ^ "all.csv");
+  print_endline "When considering only one time a given function of a given package:";
+  print_infos (remove_version_all all_cluster) (csvfile ^ "only.csv")
 
 let () = main Sys.argv.(1) Sys.argv.(2)
