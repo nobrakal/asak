@@ -39,9 +39,8 @@ This is not a mathematically valid distance, but only a semimetric.
 The first argument must be an equivalent of {!semimetric}.
  *)
 val dist :
-  ((int * 'a) list -> (int * 'a) list -> Distance.t) ->
-  ((int * 'a) list * 'b) Wtree.wtree -> ((int * 'a) list * 'b) Wtree.wtree
-  -> Distance.t
+  ('a -> 'a -> Distance.t) ->
+  'a Wtree.wtree -> 'a Wtree.wtree -> Distance.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
     clustering using {!dist}.
@@ -52,7 +51,7 @@ val dist :
 
     The list is sorted with biggest trees first.
  *)
-val cluster : ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
+val cluster : int -> ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
 
 (** Print recursively a cluster given a printer for the labels. *)
 val print_cluster : ('a -> string) -> ('a list) wtree list -> unit
