@@ -28,7 +28,7 @@ let () =
   let all_hashs =
     List.fold_left
       (fun acc x -> read x @ acc) [] xs in
-  let all_cluster = Asak.Clustering.cluster cores all_hashs in
+  let all_cluster = Asak.Clustering.cluster ~cores all_hashs in
   let chan = open_out_bin filename in
   Marshal.to_channel chan all_cluster [];
   close_out chan;
