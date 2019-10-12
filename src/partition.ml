@@ -81,7 +81,7 @@ let hm_part prof m =
         let e = Lambda_utils.hash_lambda {should_sort=true; hash_var=false} threshold x in
         (t,e)::acc
       ) [] m in
-  Clustering.cluster 1 lst
+  Clustering.cluster lst
 
 let add_impl_example m cluster =
   let open Wtree in
