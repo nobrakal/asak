@@ -189,9 +189,11 @@ let refine_class tbl (xs : Hash.t wtree list) =
        | Regular p -> compute (merge p u v xs)
   in compute xs
 
-let hierarchical_clustering tbl (xs : Hash.t wtree list list) =
-  let rafine_class = refine_class tbl in
-  List.rev_map rafine_class xs
+let hierarchical_clustering cores tbl (xs : Hash.t wtree list list) =
+  let cored = split_by_cores cores xs in
+  let rafine_class = List.fold_left (fun acc x -> List.rev_append (refine_class tbl x) acc) [] in
+  Parmap.parmapfold ~ncores:cores ~chunksize:1
+    rafine_class (Parmap.L cored) List.rev_append [] List.rev_append
 
 let add_in_cluster map (x,(h,xs)) =
   match HMap.find_opt h map with
@@ -219,9 +221,7 @@ let cluster cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) lst in
   let surapprox = surapproximate_classes distance_matrix lst in
   let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
-  let refined_classes = hierarchical_clustering distance_matrix surapprox in
-  let dendrogram_list =
-    List.fold_left (fun acc cl -> List.rev_append cl acc) [] refined_classes in
+  let dendrogram_list = hierarchical_clustering cores distance_matrix surapprox in
   let cluster =
     List.sort
       (fun x y -> - (compare_size_of_trees x y))
