@@ -2,27 +2,25 @@
 
 [![Build Status](https://travis-ci.com/nobrakal/asak.svg?branch=master)](https://travis-ci.com/nobrakal/asak)
 
-Partitioning OCaml codes.
+Asak is an OCaml library that allows to identify similar OCaml codes.
 
 ## Why ?
 
-* For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close", and in the same sub-class if they are identical (up to alpha-renaming and some inlining).
+* For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close".
 
-* For redundancy detection: while not being totally implemented, the goal is to produce a module `Asak.Factorization` that will take a list of OCaml codes and detect codes that can be factorized.
+* For redundancy detection: `Asak.Factorization` provides a function `search` which takes filenames and produces a clustering of toplevel let definitions.
 
 ## How ?
 
 There is two cores:
 
-* `Asak.Lambda_utils`, that defines a function `hash_lambda` that is hashing a lambda expression (an intermediate language in the OCaml compilation pipeline), capturing only the shape of the AST, ignoring for example variable names, function names, pattern-matching order…
+* `Asak.Lambda_hash`, that defines a function `hash_lambda` that is hashing a lambda expression (an intermediate language in the OCaml compilation pipeline), capturing the shape of the AST.
 
-* `Asak.Clustering`, that defines a function `cluster` which is making a complete-linkage clustering of a list of hashes.
-
-For more details, see [this blog post](https://blog.nyarlathotep.one/2019/06/learnocaml-code-classification/).
+* `Asak.Clustering`, that defines a function `cluster` which is making a complete-linkage clustering of a list of hashes. This function can parallelize some work.
 
 ## Documentation
 
-The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/].
+The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/](https://nobrakal.github.io/asak/asak/).
 
 #### The name
 
