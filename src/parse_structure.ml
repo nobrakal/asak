@@ -68,7 +68,7 @@ let simplify_lambda lambda =
 #endif
 
 let lambda_of_expression expr =
-  Lambda_utils.inline_all @@
+  Lambda_normalization.inline_all @@
     simplify_lambda @@
       Translcore.transl_exp expr
 

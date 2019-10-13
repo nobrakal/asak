@@ -10,7 +10,9 @@ First some variables:
 OPAM_REPO=/tmp/opam
 MODIFIED_OCAML=/tmp/ocaml
 ASAK_REPO=/tmp/asak-repo
+ASAK_PREFIX=/tmp/asak
 THRESHOLD=100
+CORES=4
 ```
 
 1. Download the [opam-repository][https://github.com/ocaml/opam-repository/]. It is used as a list of packages.
@@ -45,12 +47,18 @@ dune build utils/build_all_opam.exe
 4. Run `build_all_opam`
 
 ```
-mkdir /tmp/asak # lambdas will be stored here
+mkdir ASAK_PREFIX # lambdas will be stored here
 $ASAK_REPO/_build/default/utils/build_all_opam.exe $OPAM_REPO/packages $MODIFIED_OCAML
 ```
 
 5. Run `run_on_lambdas`
 
 ```
-$ASAK_REPO/_build/default/utils/run_on_lambdas.exe $THRESHOLD /tmp/asak/*
+$ASAK_REPO/_build/default/utils/run_on_lambdas.exe $CORES out.asak $THRESHOLD $ASAK_PREFIX/*
+```
+
+6. Analyze with `inspect_db`:
+
+```
+$ASAK_REPO/_build/default/utils/inspect_db.exe out.asak analysis
 ```

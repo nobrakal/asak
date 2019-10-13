@@ -7,7 +7,7 @@
 
 open Asak
 
-let threshold = Lambda_utils.Hard 0
+let threshold = Lambda_hash.Hard 0
 
 let rec last x xs =
   match xs with
@@ -33,7 +33,7 @@ let hash_and_compare name hash str1 str2 () =
   check testable_hash name (hash lambda1) (hash lambda2)
 
 let hash_strict =
-  Lambda_utils.(hash_lambda {should_sort=false;hash_var=true} threshold)
+  Lambda_hash.(hash_lambda {should_sort=false;hash_var=true} threshold)
 
 let tests_same_hash =
   [("alpha-conv1", ( "let f a b = a + b"

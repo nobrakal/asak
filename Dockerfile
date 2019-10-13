@@ -21,6 +21,8 @@ RUN git clone --branch 4.08 --single-branch --depth=1 https://github.com/nobraka
 
 RUN mkdir /tmp/asak
 
+ENV ASAK_PREFIX /tmp/asak
+
 RUN cd /home/opam/ocaml \
     && opam switch create . --empty \
     && eval $(opam env) \

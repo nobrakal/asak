@@ -74,11 +74,11 @@ let partition_funexist sol_type fun_name =
   in List.fold_left aux ([],[])
 
 let hm_part prof m =
-  let threshold = Lambda_utils.Percent prof in
+  let threshold = Lambda_hash.Percent prof in
   let lst =
     List.fold_left
       (fun acc (t,(_,x)) ->
-        let e = Lambda_utils.hash_lambda {should_sort=true; hash_var=false} threshold x in
+        let e = Lambda_hash.hash_lambda {should_sort=true; hash_var=false} threshold x in
         (t,e)::acc
       ) [] m in
   Clustering.cluster lst
