@@ -23,21 +23,32 @@ let update_plus_one = function
 
 let size_of_class = fold_tree (fun _ -> ( + ) ) List.length
 
+let take_first limit xs =
+  let rec aux i = function
+  | [] -> []
+  | x::xs ->
+    if i < limit
+    then x::(aux (i+1) xs)
+    else []
+  in aux 0 xs
+
 let compare_m_fst (x,_) (y,_) = - compare x y
 
-let print_first_10 =
+let print_first toinspect =
   let rec aux i xs =
-    if i < 10
+    if i < toinspect
     then
       match xs with
       | [] -> failwith "print_first_10"
       | (s,x)::xs ->
          Printf.printf "Class n°%d of size %d\n" i s;
-         Printf.printf "repr: %s\n" (List.hd (fold_tree (fun _ x _ -> x) (fun x -> x) x));
+         List.iter print_endline 
+           (take_first 10 (fold_tree (fun _ x _ -> x) (fun x -> x) x));
+         print_endline "";
          aux (i+1) xs
   in aux 0
 
-let print_infos (classes : string list wtree list) csvfile =
+let print_infos toinspect (classes : string list wtree list) csvfile =
   let list_of_lengths = List.rev_map size_of_class classes in
   let nb_defs = sum list_of_lengths in
   Printf.printf "Number of let-definitions: %d\n" nb_defs;
@@ -54,7 +65,7 @@ let print_infos (classes : string list wtree list) csvfile =
   Printf.printf "The biggest class is of size: %d\n" maxe;
   let median = fst @@ List.nth classes_with_size (nb_real_class / 2) in
   Printf.printf "Median of size of classes with more than one element: %d\n" median;
-  print_first_10 classes_with_size;
+  print_first toinspect classes_with_size;
   let assoc_map =
     List.fold_left (fun acc (x,_) -> IntMap.update x update_plus_one acc) IntMap.empty classes_with_size in
   let plot = IntMap.fold (fun k v acc -> acc ^ string_of_int k ^ "," ^ string_of_int v ^ "\n") assoc_map "" in
@@ -62,12 +73,12 @@ let print_infos (classes : string list wtree list) csvfile =
   output_string chan plot;
   close_out chan
 
-let main filename csvfile =
+let main filename toinspect csvfile =
   let chan = open_in_bin filename in
   let all_cluster : (string list) wtree list = Marshal.from_channel chan in
   print_endline "When considering different versions of the same package:";
-  print_infos all_cluster (csvfile ^ "all.csv");
+  print_infos toinspect all_cluster (csvfile ^ "all.csv");
   print_endline "When considering only one time a given function of a given package:";
-  print_infos (remove_version_all all_cluster) (csvfile ^ "only.csv")
+  print_infos toinspect (remove_version_all all_cluster) (csvfile ^ "only.csv")
 
-let () = main Sys.argv.(1) Sys.argv.(2)
+let () = main Sys.argv.(1) (int_of_string Sys.argv.(2)) Sys.argv.(3)
