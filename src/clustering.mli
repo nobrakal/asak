@@ -27,11 +27,11 @@ val symmetric_difference : 'a list -> 'a list -> 'a list option
 val semimetric :
   (int * 'a) list -> (int * 'a) list -> Distance.t
 
-(** Compute recursively the distance between two clusters:
+(** Compute recursively the dissimilarity between two clusters:
 
 - If there is two {!Wtree.Leaf}, use the sum of the weight of the symmetric difference
   of their hash lists (or [Infinity] if the intersection was empty).
-- If there is a {!Wtree.Node}, use the {e maximum} of the distances between the sub-trees
+- If there is a {!Wtree.Node}, use the {e maximum} of the dissimilarities between the sub-trees
   and the other tree.
 
 This is not a mathematically valid distance, but only a semimetric.
@@ -43,7 +43,7 @@ val dist :
   'a Wtree.wtree -> 'a Wtree.wtree -> Distance.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
-    clustering using {!dist}.
+    clustering using {!semimetric}.
 
     @return A list of trees, where
     two keys are in the same tree if they share at least one hash and in

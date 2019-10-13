@@ -10,7 +10,7 @@ type threshold =
   | Hard of int (** A hard threshold. *)
 
 type config =
-  { should_sort : bool; (** If we sort all lists of hash. *)
+  { should_sort : bool; (** If we sort all lists of hashes. *)
     hash_var : bool; (** If we hash names in the AST. *)
   }
 
@@ -23,7 +23,7 @@ type config =
 
     @param expr The expression.
 
-     @return A tuple with the main hash, and a list of hashes of sub-ASTs.
+     @return A tuple with the main hash, and a list of hashes of sub-ASTs satisfying the threshold.
 All hashes are given with the weight of their AST.
 *)
 val hash_lambda :
@@ -38,7 +38,7 @@ val hash_all :
   ('a * Lambda.lambda) list ->
   ('a * ((int * string) * (int * string) list)) list
 
-(** Escape hashs. *)
+(** Escape hashses. *)
 val escape_hash_list :
   ('a * ((int * string) * (int * string) list)) list
   -> ('a * ((int * string) * (int * string) list)) list
