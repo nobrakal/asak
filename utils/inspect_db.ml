@@ -15,11 +15,6 @@ let remove_version_all =
 
 let sum xs = List.fold_left ( + ) 0 xs
 
-let rec last = function
-  | [] -> failwith "last"
-  | [x] -> x
-  | _::xs -> last xs
-
 module IntMap = Map.Make(struct type t = int let compare = compare end)
 
 let update_plus_one = function
@@ -27,6 +22,20 @@ let update_plus_one = function
   | Some x -> Some (x+1)
 
 let size_of_class = fold_tree (fun _ -> ( + ) ) List.length
+
+let compare_m_fst (x,_) (y,_) = - compare x y
+
+let print_first_10 =
+  let rec aux i xs =
+    if i < 10
+    then
+      match xs with
+      | [] -> failwith "print_first_10"
+      | (s,x)::xs ->
+         Printf.printf "Class n°%d of size %d\n" i s;
+         Printf.printf "repr: %s\n" (List.hd (fold_tree (fun _ x _ -> x) (fun x -> x) x));
+         aux (i+1) xs
+  in aux 0
 
 let print_infos (classes : string list wtree list) csvfile =
   let list_of_lengths = List.rev_map size_of_class classes in
@@ -40,12 +49,14 @@ let print_infos (classes : string list wtree list) csvfile =
   let nb_real_class = List.length real_class in
   Printf.printf "Number of classes with (strictly) more than one element: %d\n"
     nb_real_class;
-  let size_of_classes = List.sort compare @@ List.map size_of_class real_class in
-  let maxe = last size_of_classes in
+  let classes_with_size = List.sort compare_m_fst @@ List.map (fun x -> size_of_class x, x) real_class in
+  let maxe = fst @@ List.hd classes_with_size in
   Printf.printf "The biggest class is of size: %d\n" maxe;
-  let median = List.nth size_of_classes (nb_real_class / 2) in
+  let median = fst @@ List.nth classes_with_size (nb_real_class / 2) in
   Printf.printf "Median of size of classes with more than one element: %d\n" median;
-  let assoc_map = List.fold_left (fun acc x -> IntMap.update x update_plus_one acc) IntMap.empty size_of_classes in
+  print_first_10 classes_with_size;
+  let assoc_map =
+    List.fold_left (fun acc (x,_) -> IntMap.update x update_plus_one acc) IntMap.empty classes_with_size in
   let plot = IntMap.fold (fun k v acc -> acc ^ string_of_int k ^ "," ^ string_of_int v ^ "\n") assoc_map "" in
   let chan = open_out csvfile in
   output_string chan plot;
