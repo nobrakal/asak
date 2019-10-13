@@ -42,6 +42,3 @@ val hash_all :
 val escape_hash_list :
   ('a * ((int * string) * (int * string) list)) list
   -> ('a * ((int * string) * (int * string) list)) list
-
-(** Inline all possible (ie. without side effect) expressions in a lambda expression. *)
-val inline_all : Lambda.lambda -> Lambda.lambda

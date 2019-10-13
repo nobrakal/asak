@@ -1,5 +1,5 @@
 let read threshold x =
-  let open Asak.Lambda_utils in
+  let open Asak.Lambda_hash in
   let prefix =
     try
       let ind = String.index x ':' in
