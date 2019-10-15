@@ -34,7 +34,7 @@ It will run, store its result and print the whole clustering.
 The whole clustering can be pretty big, so we offer another executable `inspect_db` which takes several arguments:
 
 ```
-inepsect_db output_db.asak biggest_class number_of_repr prefix
+inpsect_db output_db.asak biggest_class number_of_repr prefix
 ```
 
 where:
