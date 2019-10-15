@@ -1,64 +1,45 @@
 # What ?
 
-`run_on_lambdas` and `build_all_opam` are tools to run asak on opam libraries.
+`build_all_opam`, `run_on_lambdas` and `inspect_db` are tools to run `asak` on OPAM libraries.
 
 # How ?
 
-First some variables:
+## Build all opam packages
+
+The simplest way is to use the provided `Dockerfile` in the root directory.
+
+You will only need to have docker volume to store the produced lambda trees when running the image. Please mount it to `/mnt/asak`.
+
+The entry-point takes optional arguments to specify on which package to begin and which package to stop (on alphabetical order). By default, all packages are built.
+
+## Inspect these lambdas
+
+Use the `run_on_lambdas` executable. It takes several arguments:
 
 ```
-OPAM_REPO=/tmp/opam
-MODIFIED_OCAML=/tmp/ocaml
-ASAK_REPO=/tmp/asak-repo
-ASAK_PREFIX=/tmp/asak
-THRESHOLD=100
-CORES=4
+run_on_lambdas cores output_db.asak threshold [FILES]
 ```
 
-1. Download the [opam-repository][https://github.com/ocaml/opam-repository/]. It is used as a list of packages.
+where:
+
+* `cores` is the number of cores of the computer to use.
+* `output_db.asak` is a file to store the computed clustering. for further investigation.
+* `threshold` is an integer threshold to keep sub-AST.
+* `[FILES]` the collection of lambdas to inspect. Usually something like `copy_of_docker_volume/*`
+
+It will run, store its result and print the whole clustering.
+
+## Inspect this database
+
+The whole clustering can be pretty big, so we offer another executable `inspect_db` which takes several arguments:
 
 ```
-git clone --depth=1 https://github.com/ocaml/opam-repository.git $OPAM_REPO
+inepsect_db output_db.asak biggest_class number_of_repr prefix
 ```
 
-2. Download the modified OCaml compiler that will dump intermediate lambda representation.
+where:
 
-```
-git clone --branch 4.08 --single-branch --depth=1 https://github.com/nobrakal/ocaml.git $MODIFIED_OCAML
-```
-
-3. Create an empty switch and install the modified compiler.
-
-```
-cd $MODIFIED_OCAML
-opam switch create . --empty
-eval $(opam env)
-opam install .
-```
-
-4. Download this repository and build things
-
-```
-git clone https://github.com/nobrakal/asak.git $ASAK_REPO
-cd $ASAK_REPO
-dune build utils/build_all_opam.exe
-```
-
-4. Run `build_all_opam`
-
-```
-mkdir ASAK_PREFIX # lambdas will be stored here
-$ASAK_REPO/_build/default/utils/build_all_opam.exe $OPAM_REPO/packages $MODIFIED_OCAML
-```
-
-5. Run `run_on_lambdas`
-
-```
-$ASAK_REPO/_build/default/utils/run_on_lambdas.exe $CORES out.asak $THRESHOLD $ASAK_PREFIX/*
-```
-
-6. Analyze with `inspect_db`:
-
-```
-$ASAK_REPO/_build/default/utils/inspect_db.exe out.asak analysis
-```
+* `output_db.asak` is a file produced by `run_on_lambdas`
+* `biggest_class` is an integer corresponding to the number of biggest classes to show.
+* `number_of_repr` is an integer corresponding to the number of representative elements per class to show.
+* `prefix` is a prefix to store a csv file containing more information.
