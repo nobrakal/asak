@@ -207,11 +207,15 @@ let create_start_cluster sorted_hash_list =
 let compare_size_of_trees x y =
   compare (size_of_tree List.length x) (size_of_tree List.length y)
 
-let cluster ?cores (hash_list : ('a * (Hash.t * Hash.t list)) list) =
+let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let cores =
     match cores with
     | None -> Parmap.get_default_ncores ()
     | Some x -> x in
+  let hash_list =
+    match filter_small_trees with
+    | None -> hash_list
+    | Some t -> List.filter (fun (_,((p,_),_)) -> p >= t) hash_list in
   let sorted_hash_list =
     List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
   let start = create_start_cluster sorted_hash_list in

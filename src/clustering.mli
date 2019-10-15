@@ -45,13 +45,19 @@ val dist :
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
     clustering using {!semimetric}.
 
+    @param cores The number of cores that the function can use
+    (by default, try to detect how many the computer has).
+
+    @param filter_small_trees If specified, will remove hashes
+    that do not have at least this weight.
+
     @return A list of trees, where
     two keys are in the same tree if they share at least one hash and in
     the same leaf if they share exactly the same hash list.
 
     The list is sorted with biggest trees first.
  *)
-val cluster : ?cores:int -> ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
+val cluster : ?cores:int -> ?filter_small_trees:int -> ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
 
 (** Print recursively a cluster given a printer for the labels. *)
 val print_cluster : ('a -> string) -> ('a list) wtree list -> unit
