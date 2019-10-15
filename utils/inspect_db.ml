@@ -37,6 +37,8 @@ let take_first limit xs =
     else []
   in aux 0 xs
 
+let compare_m_fst (x,_) (y,_) = - compare x y
+
 let flatten_tree t = fold_tree (fun _ -> List.rev_append) (fun x -> x) t
 
 let print_first toinspect thres =
