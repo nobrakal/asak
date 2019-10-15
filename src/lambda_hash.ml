@@ -40,6 +40,12 @@ let hash_incremental start xs =
       xs start in
   1+p,lst,xs'
 
+let hash_prim x = h1 @@
+  match x with
+  | Pgetglobal id -> Ident.name id
+  | Pfield i -> string_of_int i
+  | _ -> "Primitive"
+
 let hash_lst should_sort f x xs =
   let res =
     List.fold_left
@@ -111,9 +117,10 @@ let hash_lambda config x =
        hash_string_lst "Lletrec"
          [ hash_lst_anon (fun (_,x) -> hash_lambda_aux i letbinds x) lst
          ; hash_lambda_aux i letbinds l]
-    | Lprim (_,lst,_) ->
+    | Lprim (prim,lst,_) ->
        hash_string_lst "Lprim"
-         [ hash_lst_anon hash_lambda' lst
+         [ hash_prim prim;
+           hash_lst_anon hash_lambda' lst
          ]
     | Lstaticraise (_,lst) ->
        hash_string_lst "Lstaticraise"
