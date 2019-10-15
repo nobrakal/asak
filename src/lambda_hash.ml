@@ -42,9 +42,10 @@ let hash_incremental start xs =
 
 let hash_prim x = h1 @@
   match x with
-  | Pgetglobal id -> Ident.name id
-  | Pfield i -> string_of_int i
-  | _ -> "Primitive"
+  | Pgetglobal id -> "Pgetglobal" ^ Ident.name id
+  | Pfield i -> "Pfield" ^ string_of_int i
+  | Pccall x -> "Pccall" ^ Primitive.native_name x
+  | _ -> Printlambda.name_of_primitive x
 
 let hash_lst should_sort f x xs =
   let res =
