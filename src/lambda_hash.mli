@@ -15,10 +15,10 @@ type config =
   }
 
 (** A thumbprint is a weighted Digest.t *)
-type thumbprint = int * Digest.t
+type fingerprint = int * Digest.t
 
 (** A type synonym for the result of the {! hash_lambda} function *)
-type hash = thumbprint * thumbprint list
+type hash = fingerprint * fingerprint list
 
 (** Hash a lambda expression. Usage: [hash_lambda config threshold expr].
     Two lambda expressions "of the same shape" will share the same hash.

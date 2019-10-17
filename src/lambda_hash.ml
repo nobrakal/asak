@@ -15,9 +15,9 @@ type config =
     hash_var : bool;
   }
 
-type thumbprint = int * Digest.t
+type fingerprint = int * Digest.t
 
-type hash = thumbprint * thumbprint list
+type hash = fingerprint * fingerprint list
 
 let h1' x = 1,[],x
 let h1  x = h1' (Digest.string x)
