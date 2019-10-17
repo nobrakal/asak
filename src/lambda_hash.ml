@@ -15,6 +15,10 @@ type config =
     hash_var : bool;
   }
 
+type thumbprint = int * Digest.t
+
+type hash = thumbprint * thumbprint list
+
 let h1' x = 1,[],x
 let h1  x = h1' (Digest.string x)
 
@@ -214,16 +218,10 @@ let hash_lambda config threshold l =
   let fmain_weight = float_of_int main_weight in
   (main_weight,h), sort_filter config.should_sort threshold fmain_weight ss_arbres
 
+let map_snd f xs = List.map (fun (x,y) -> x,f y) xs
+
 let hash_all config hard_weight xs =
-  let threshold = Hard hard_weight in
-  let all_hashs =
-    List.map
-      (fun (name_prefixed,x) ->
-        let (main_hash,leaves_hashs) = hash_lambda config threshold x in
-        (name_prefixed, (main_hash,leaves_hashs))
-      )
-      xs
-  in all_hashs
+  map_snd (hash_lambda config (Hard hard_weight)) xs
 
 let escape_hash_list xs =
-  List.map (fun (name,((p,h),xs)) -> name,((p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs)) xs
+  map_snd (fun ((p,h),xs) -> (p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs) xs

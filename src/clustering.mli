@@ -57,7 +57,10 @@ val dist :
 
     The list is sorted with biggest trees first.
  *)
-val cluster : ?cores:int -> ?filter_small_trees:int -> ('a * ((int * string) * (int * string) list)) list -> ('a list) wtree list
+val cluster :
+  ?cores:int
+  -> ?filter_small_trees:int
+  -> ('a * Lambda_hash.hash) list -> ('a list) wtree list
 
 (** Print recursively a cluster given a printer for the labels. *)
 val print_cluster : ('a -> string) -> ('a list) wtree list -> unit

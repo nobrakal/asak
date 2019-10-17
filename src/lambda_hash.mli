@@ -14,6 +14,12 @@ type config =
     hash_var : bool; (** If we hash names in the AST. *)
   }
 
+(** A thumbprint is a weighted Digest.t *)
+type thumbprint = int * Digest.t
+
+(** A type synonym for the result of the {! hash_lambda} function *)
+type hash = thumbprint * thumbprint list
+
 (** Hash a lambda expression. Usage: [hash_lambda config threshold expr].
     Two lambda expressions "of the same shape" will share the same hash.
 
@@ -29,16 +35,15 @@ All hashes are given with the weight of their AST.
 val hash_lambda :
   config ->
   threshold ->
-  Lambda.lambda -> (int * string) * (int * string) list
+  Lambda.lambda -> hash
 
 (** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }. *)
 val hash_all :
   config ->
   int ->
   ('a * Lambda.lambda) list ->
-  ('a * ((int * string) * (int * string) list)) list
+  ('a * hash) list
 
 (** Escape hashses. *)
 val escape_hash_list :
-  ('a * ((int * string) * (int * string) list)) list
-  -> ('a * ((int * string) * (int * string) list)) list
+  ('a * hash) list -> ('a * hash) list

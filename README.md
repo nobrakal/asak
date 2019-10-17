@@ -14,9 +14,9 @@ Asak is an OCaml library that allows to identify similar OCaml codes.
 
 There is two cores:
 
-* `Asak.Lambda_hash`, that defines a function `hash_lambda` that is hashing a lambda expression (an intermediate language in the OCaml compilation pipeline), capturing the shape of the AST.
+* `Asak.Lambda_hash`, that defines a function `hash_lambda` which is hashing a lambda expression (an intermediate language in the OCaml compilation pipeline), capturing the shape of the AST.
 
-* `Asak.Clustering`, that defines a function `cluster` which is making a complete-linkage clustering of a list of hashes. This function can parallelize some work.
+* `Asak.Clustering`, that defines a function `cluster` which is making a kind of complete-linkage clustering of a list of hashes. This function can parallelize some work.
 
 ## Documentation
 
