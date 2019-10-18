@@ -38,12 +38,6 @@ let hash_string_lst should_sort x xs =
           if x = "" then xs else (Digest.string x::xs) in
   1+p,lst,res
 
-let hash_incremental start xs =
-  let p,lst,xs' =
-    List.fold_right (fun (u,l,x) (v,l',xs) -> u+v,(u,x)::l@l',Digest.string (x^xs))
-      xs start in
-  1+p,lst,xs'
-
 let hash_prim x = h1 @@
   match x with
   | Pgetglobal id -> "Pgetglobal" ^ Ident.name id
@@ -105,7 +99,8 @@ let hash_lambda config x =
        in h1 str
     | Lconst _ -> h1 "Lconst"
     | Lapply x ->
-       hash_incremental (hash_lambda' x.ap_func) (List.map hash_lambda' (x.ap_args))
+       hash_string_lst "Lapply"
+         (hash_lambda' x.ap_func :: (List.map hash_lambda' (x.ap_args)))
     | Lfunction x ->
        let params = extract_params_name x.params in
        let (i,letbinds) =
