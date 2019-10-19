@@ -145,7 +145,7 @@ let merge p u v xs =
 let semimetric_from tbl x y =
   try
     let value =
-      HPMap.find (if x < y then (x,y) else (y,x)) tbl in
+      Hashtbl.find tbl (if x < y then (x,y) else (y,x)) in
     Distance.Regular value
   with Not_found -> Distance.Infinity
 
@@ -172,7 +172,7 @@ let surapproximate_classes tbl xs =
   let try_to_merge (x',x) (y',y) =
     if x' < y'
     then
-      if HPMap.mem (x',y') tbl
+      if Hashtbl.mem tbl (x',y')
       then let _ = UnionFind.union x y in () in
   iter_on_cart_prod try_to_merge xs';
   classes_of_uf xs'
@@ -207,6 +207,12 @@ let create_start_cluster sorted_hash_list =
 let compare_size_of_trees x y =
   compare (size_of_tree List.length x) (size_of_tree List.length y)
 
+let convert_map_to_hm m =
+  let size = HPMap.cardinal m in
+  let ht = Hashtbl.create size in
+  HPMap.iter (Hashtbl.add ht) m;
+  ht
+
 let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let cores =
     match cores with
@@ -225,11 +231,12 @@ let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
   let was_seen,distance_matrix = compute_all_sym_diff cores start in
+  let hdistance_matrix = convert_map_to_hm distance_matrix in
   let lst = List.map fst start in
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) lst in
-  let surapprox = surapproximate_classes distance_matrix lst in
+  let surapprox = surapproximate_classes hdistance_matrix lst in
   let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
-  let dendrogram_list = hierarchical_clustering cores distance_matrix surapprox in
+  let dendrogram_list = hierarchical_clustering cores hdistance_matrix surapprox in
   let cluster =
     List.sort
       (fun x y -> - (compare_size_of_trees x y))
