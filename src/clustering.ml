@@ -90,10 +90,10 @@ let split_by_cores cores xs =
         else i+1,x::xs,acc) (1,[],[]) xs in
   left::cored
 
-let add_if_non_inf (x,xs) ((s,m) as acc) (y,ys) =
+let add_if_non_inf assoc_main_subs x ((s,m) as acc) y =
   if x < y
   then
-    match semimetric xs ys with
+    match semimetric (Hashtbl.find assoc_main_subs x) (Hashtbl.find assoc_main_subs y) with
     | Infinity -> acc
     | Regular dist ->
        HSet.add x (HSet.add y s),
@@ -103,13 +103,13 @@ let add_if_non_inf (x,xs) ((s,m) as acc) (y,ys) =
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
  *)
-let compute_all_sym_diff cores xs =
+let compute_all_sym_diff cores assoc_main_subs xs =
   let cored = split_by_cores cores xs in
   let get_fst _ x _ = Some x in
   let neutral = (HSet.empty, HPMap.empty) in
   let map xs' =
     List.fold_left
-      (fun acc x -> List.fold_left (add_if_non_inf x) acc xs) neutral xs' in
+      (fun acc x -> List.fold_left (add_if_non_inf assoc_main_subs x) acc xs) neutral xs' in
   let fold (s1,m1) (s2,m2) = HSet.union s1 s2, HPMap.union get_fst m1 m2 in
   List.fold_left fold neutral @@
     Parmap.parmap ~ncores:cores ~chunksize:1 map (Parmap.L cored)
@@ -195,13 +195,13 @@ let hierarchical_clustering cores tbl (xs : Hash.t wtree list list) =
   Parmap.parmapfold ~ncores:cores ~chunksize:1
     rafine_class (Parmap.L cored) List.rev_append [] List.rev_append
 
-let add_in_cluster map (x,(h,xs)) =
+let add_in_cluster map (x,h) =
   match HMap.find_opt h map with
-  | None -> HMap.add h (xs,[x]) map
-  | Some (_,ys) -> HMap.add h (xs,x::ys) map
+  | None -> HMap.add h [x] map
+  | Some ys -> HMap.add h (x::ys) map
 
-let create_start_cluster sorted_hash_list =
-  let cluster = List.fold_left add_in_cluster HMap.empty sorted_hash_list in
+let create_start_cluster hash_list =
+  let cluster = List.fold_left add_in_cluster HMap.empty hash_list in
   HMap.fold (fun k xs acc -> (k,xs)::acc) cluster []
 
 let compare_size_of_trees x y =
@@ -213,6 +213,10 @@ let convert_map_to_hm m =
   HPMap.iter (Hashtbl.add ht) m;
   ht
 
+let add_in_assoc tbl (_,(h,xs)) =
+  if not (Hashtbl.mem tbl h)
+  then Hashtbl.add tbl h (List.sort compare xs)
+
 let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list) =
   let cores =
     match cores with
@@ -222,18 +226,17 @@ let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)
     match filter_small_trees with
     | None -> hash_list
     | Some t -> List.filter (fun (_,((p,_),_)) -> p >= t) hash_list in
-  let sorted_hash_list =
-    List.rev_map (fun (x,(h,xs)) -> x,(h,List.sort compare (h::xs))) hash_list in
-  let start = create_start_cluster sorted_hash_list in
+  let assoc_main_subs = Hashtbl.create (List.length hash_list) in
+  List.iter (add_in_assoc assoc_main_subs) hash_list;
+  let start = create_start_cluster (List.rev_map (fun (k,(h,_)) -> k,h) hash_list) in
   let start,assoc_hash_ident_list =
     List.fold_left
-      (fun (acc,m) (main_hash,(lst,xs)) -> (main_hash,lst)::acc,HMap.add main_hash xs m)
+      (fun (acc,m) (main_hash,xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
-  let was_seen,distance_matrix = compute_all_sym_diff cores start in
+  let was_seen,distance_matrix = compute_all_sym_diff cores assoc_main_subs start in
   let hdistance_matrix = convert_map_to_hm distance_matrix in
-  let lst = List.map fst start in
-  let lst,alone = List.partition (fun x -> HSet.mem x was_seen) lst in
+  let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
   let surapprox = surapproximate_classes hdistance_matrix lst in
   let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
   let dendrogram_list = hierarchical_clustering cores hdistance_matrix surapprox in
