@@ -108,6 +108,13 @@ let extract_params_name xs =
   xs
 #endif
 
+let create_ident x =
+#if OCAML_VERSION >= (4, 08, 0)
+  Ident.create_local x
+#else
+  Ident.create x
+#endif
+
 let normalize_local_variables x =
   let rec aux i letbinds x =
     let aux' = aux i letbinds in
@@ -116,7 +123,7 @@ let normalize_local_variables x =
        begin
          match List.assoc_opt var letbinds with
          | None -> x
-         | Some x -> Lvar (Ident.create_local (string_of_int x))
+         | Some x -> Lvar (create_ident (string_of_int x))
        end
     | Lconst _ -> x
     | Lapply x ->
