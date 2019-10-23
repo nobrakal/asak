@@ -74,49 +74,33 @@ let hash_meth_kind x = h1 @@
    | Public -> "Public"
    | Cached -> "Cached"
 
-let extract_params_name xs =
-#if OCAML_VERSION >= (4, 08, 0)
-  List.map fst xs
-#else
-  xs
-#endif
-
 let hash_lambda config x =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
   let hash_lst f = hash_lst config.should_sort f in
-  let rec hash_lambda_aux i letbinds x =
-    let hash_lambda' = hash_lambda_aux i letbinds in
+  let rec hash_lambda' x =
     match x with
     | Lvar var ->
        let str =
          if not config.hash_var
          then "Lvar"
-         else
-           match List.assoc_opt var letbinds with
-           | None -> Ident.name var
-           | Some x -> "Lvar" ^ (string_of_int x)
+         else Ident.name var
        in h1 str
     | Lconst _ -> h1 "Lconst"
     | Lapply x ->
        hash_string_lst "Lapply"
          (hash_lambda' x.ap_func :: (List.map hash_lambda' (x.ap_args)))
     | Lfunction x ->
-       let params = extract_params_name x.params in
-       let (i,letbinds) =
-         List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params (i,letbinds) in
        hash_string_lst "Lfunction"
-         [ hash_lambda_aux i letbinds x.body ]
-    | Llet (_,_,id,l,r) ->
+         [ hash_lambda'  x.body ]
+    | Llet (_,_,_,l,r) ->
        hash_string_lst "Llet"
          [ hash_lambda' l
-         ; hash_lambda_aux (i+1) ((id,i)::letbinds) r]
+         ; hash_lambda' r]
     | Lletrec (lst,l) ->
-       let (i,letbinds) =
-         List.fold_right (fun (id,_) (i,acc) -> (i+1),(id,i)::acc) lst (i,letbinds) in
        hash_string_lst "Lletrec"
-         [ hash_lst_anon (fun (_,x) -> hash_lambda_aux i letbinds x) lst
-         ; hash_lambda_aux i letbinds l]
+         [ hash_lst_anon (fun (_,x) -> hash_lambda' x) lst
+         ; hash_lambda' l]
     | Lprim (prim,lst,_) ->
        hash_string_lst "Lprim"
          [ hash_prim prim;
@@ -176,17 +160,17 @@ let hash_lambda config x =
          [ hash_lambda' l
          ; hash_lambda' r
          ]
-    | Ltrywith (l,id,r) ->
+    | Ltrywith (l,_,r) ->
        hash_string_lst "Ltrywith"
          [ hash_lambda' l
-         ; hash_lambda_aux (i+1) ((id,i)::letbinds) r
+         ; hash_lambda' r
          ]
-    | Lfor (id,a,b,d,c) ->
+    | Lfor (_,a,b,d,c) ->
        hash_string_lst "Lfor"
          [ hash_lambda' a
          ; hash_lambda' b
          ; hash_direction d
-         ; hash_lambda_aux (i+1) ((id,i)::letbinds) c
+         ; hash_lambda' c
          ]
     | Lsend (m,a,b,xs,_) ->
        hash_string_lst "Lsend"
@@ -195,7 +179,7 @@ let hash_lambda config x =
          ; hash_lambda' b
          ; hash_lst_anon hash_lambda' xs
          ]
-  in hash_lambda_aux 0 [] x
+  in hash_lambda' x
 
 let sort_filter should_sort threshold main_weight xs =
   let pred =

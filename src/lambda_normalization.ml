@@ -7,12 +7,14 @@
 
 open Lambda
 
+let map_snd aux = List.map (fun (e,x) -> e, aux x)
+
+let map_opt aux = function
+  | None -> None
+  | Some x -> Some (aux x)
+
 let fold_lambda lvar llet =
   let rec aux expr =
-    let insnd lst = List.map (fun (e,x) -> e, aux x) lst in
-    let inopt = function
-    | None -> None
-    | Some x -> Some (aux x) in
   match expr with
   | Lvar x -> lvar x
   | Lconst _ -> expr
@@ -26,7 +28,7 @@ let fold_lambda lvar llet =
      let body = aux x.body in
      Lfunction {x with body}
   | Lletrec (lst,l) ->
-     Lletrec (insnd lst, aux l)
+     Lletrec (map_snd aux lst, aux l)
   | Lprim (a,lst,b) ->
      Lprim (a,List.map aux lst, b)
   | Lstaticraise (a,lst) ->
@@ -41,17 +43,17 @@ let fold_lambda lvar llet =
      Lifused (i, aux l)
 #if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,i) ->
-     let sw_consts = insnd s.sw_consts in
-     let sw_blocks = insnd s.sw_blocks in
+     let sw_consts = map_snd aux s.sw_consts in
+     let sw_blocks = map_snd aux s.sw_blocks in
      Lswitch (aux l, {s with sw_consts; sw_blocks}, i)
 #else
   | Lswitch (l,s) ->
-     let sw_consts = insnd s.sw_consts in
-     let sw_blocks = insnd s.sw_blocks in
+     let sw_consts = map_snd s.sw_consts in
+     let sw_blocks = map_snd s.sw_blocks in
      Lswitch (aux l, {s with sw_consts; sw_blocks})
 #endif
   | Lstringswitch (l,lst,opt,e) ->
-     Lstringswitch (aux l, insnd lst, inopt opt, e)
+     Lstringswitch (aux l, map_snd aux lst, map_opt aux opt, e)
   | Lassign (i,l) ->
      Lassign (i, aux l)
   | Levent (l,e) ->
@@ -98,3 +100,75 @@ let inline_all =
     else
       Llet (k, e, ident, aux l, aux r) in
   fold_lambda lvar llet
+
+let extract_params_name xs =
+#if OCAML_VERSION >= (4, 08, 0)
+  List.map fst xs
+#else
+  xs
+#endif
+
+let normalize_local_variables x =
+  let rec aux i letbinds x =
+    let aux' = aux i letbinds in
+    match x with
+    | Lvar var ->
+       begin
+         match List.assoc_opt var letbinds with
+         | None -> x
+         | Some x -> Lvar (Ident.create_local (string_of_int x))
+       end
+    | Lconst _ -> x
+    | Lapply x ->
+       Lapply {x with ap_func=aux' x.ap_func; ap_args=List.map aux' x.ap_args}
+    | Lfunction x ->
+       let params = extract_params_name x.params in
+       let (i,letbinds) =
+         List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params (i,letbinds) in
+       Lfunction {x with body=aux i letbinds x.body}
+    | Llet (a,b,id,l,r) ->
+       Llet (a,b,id,aux' l, aux (i+1) ((id,i)::letbinds) r)
+    | Lletrec (lst,l) ->
+       let (i,letbinds) =
+         List.fold_right (fun (id,_) (i,acc) -> (i+1),(id,i)::acc) lst (i,letbinds) in
+       Lletrec (List.map (fun (t,x) -> t,aux i letbinds x) lst, aux i letbinds l)
+    | Lprim (a,b,c) ->
+       Lprim (a, List.map aux' b,c)
+    | Lstaticraise (a,b) ->
+       Lstaticraise (a,List.map aux' b)
+    | Lifthenelse (i,f,e) ->
+       Lifthenelse (aux' i, aux' f, aux' e)
+    | Lsequence (l,r) ->
+       Lsequence (aux' l, aux' r)
+    | Lwhile (l,r) ->
+       Lwhile (aux' l, aux' r)
+    | Lifused (a,b) ->
+       Lifused (a, aux' b)
+#if OCAML_VERSION >= (4, 06, 0)
+    | Lswitch (l,s,u) ->
+       let s =
+         {s with sw_consts = map_snd aux' s.sw_consts;
+                 sw_blocks = map_snd aux' s.sw_blocks} in
+       Lswitch (aux' l, s, u)
+#else
+    | Lswitch (l,s) ->
+        let s =
+         {s with sw_consts = map_snd aux' s.sw_consts;
+                 sw_blocks = map_snd aux' s.sw_blocks} in
+        Lswitch (aux' l, s, u)
+#endif
+    | Lstringswitch (l,lst,opt,loc) ->
+       Lstringswitch (aux' l, map_snd aux' lst, map_opt aux' opt, loc)
+    | Lassign (a,b) ->
+       Lassign (a, aux' b)
+    | Levent (a,b) ->
+       Levent (aux' a, b)
+    | Lstaticcatch (a,b,c) ->
+       Lstaticcatch (aux' a, b, aux' c)
+    | Ltrywith (l,id,r) ->
+       Ltrywith (aux' l, id, aux (i+1) ((id,i)::letbinds) r)
+    | Lfor (id,a,b,d,c) ->
+       Lfor (id,aux' a, aux' b, d, aux (i+1) ((id,i)::letbinds) c)
+    | Lsend (a,b,c,d,e) ->
+       Lsend (a, aux' b, aux' c, List.map aux' d, e)
+  in aux 0 [] x
