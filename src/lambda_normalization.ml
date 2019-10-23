@@ -48,8 +48,8 @@ let fold_lambda lvar llet =
      Lswitch (aux l, {s with sw_consts; sw_blocks}, i)
 #else
   | Lswitch (l,s) ->
-     let sw_consts = map_snd s.sw_consts in
-     let sw_blocks = map_snd s.sw_blocks in
+     let sw_consts = map_snd aux s.sw_consts in
+     let sw_blocks = map_snd aux s.sw_blocks in
      Lswitch (aux l, {s with sw_consts; sw_blocks})
 #endif
   | Lstringswitch (l,lst,opt,e) ->
