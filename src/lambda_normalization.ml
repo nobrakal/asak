@@ -162,7 +162,7 @@ let normalize_local_variables x =
         let s =
          {s with sw_consts = map_snd aux' s.sw_consts;
                  sw_blocks = map_snd aux' s.sw_blocks} in
-        Lswitch (aux' l, s, u)
+        Lswitch (aux' l, s)
 #endif
     | Lstringswitch (l,lst,opt,loc) ->
        Lstringswitch (aux' l, map_snd aux' lst, map_opt aux' opt, loc)
