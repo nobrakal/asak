@@ -266,3 +266,42 @@ let print_cluster show cluster =
     print_endline ("Class " ^ string_of_int i ^ ":");
     aux 1 x
   in List.iteri pclass cluster
+
+let fake_inputs ~set_size ~cluster_size ~cluster_nb =
+  let fake_string () = String.init 40 (fun _ -> char_of_int (Random.int 256)) in
+  let fake_hash () = Digest.string (fake_string ()) in
+
+  let fake_hashes () =
+    let total_weight = ref 0 in
+    let hashes =
+      List.init set_size (fun _ ->
+          let weight = Random.int set_size in
+          total_weight := weight + !total_weight;
+          weight, fake_hash ()) in
+    (!total_weight, fake_hash ()), hashes in
+
+  let mutate_hashes ((weight, _hash), hashlist) =
+    let mutate (w, hash) =
+      if Random.bool () then (w, hash) else (w, fake_hash ()) in
+    ((weight, fake_hash ()), List.map mutate hashlist) in
+
+  let seeds = List.init cluster_nb (fun _ -> fake_hashes ()) in
+  let from_seed seed =
+    seed :: List.init cluster_size (fun _ -> mutate_hashes seed) in
+  List.concat (List.map from_seed seeds)
+
+let () =
+  prerr_endline "usage: ./foo set_size cluster_size cluster_nb";
+  let set_size = int_of_string Sys.argv.(1) in
+  let cluster_size = int_of_string Sys.argv.(2) in
+  let cluster_nb = int_of_string Sys.argv.(3) in
+  let inputs = fake_inputs ~set_size ~cluster_size ~cluster_nb
+               |> List.map (fun hashes -> (Digest.to_hex (snd (fst hashes))), hashes) in
+  let result = cluster inputs in
+  (* print_cluster (fun x -> x) result; *)
+  ignore result
+
+(*
+ocamlfind ocamlopt -package unix,unionFind -linkpkg -o test clustering_bench.ml \
+&& time ./test 40 100 10
+*)
