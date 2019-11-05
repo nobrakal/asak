@@ -233,12 +233,17 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
       (fun (acc,m) (main_hash,xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
-  let was_seen,distance_matrix = compute_all_sym_diff cores assoc_main_subs start in
+  debug "start";
+  let was_seen,distance_matrix = compute_all_sym_diff assoc_main_subs start in
+  debug "compute_all_sym_diff done";
   let hdistance_matrix = convert_map_to_hm distance_matrix in
+  debug "convert_map_to_hm done";
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
   let surapprox = surapproximate_classes hdistance_matrix lst in
+  debug "surapproximate_classes done";
   let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
-  let dendrogram_list = hierarchical_clustering cores hdistance_matrix surapprox in
+  let dendrogram_list = hierarchical_clustering hdistance_matrix surapprox in
+  debug "hierarchical_clustering done";
   let cluster =
     List.sort
       (fun x y -> - (compare_size_of_trees x y))
