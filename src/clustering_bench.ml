@@ -46,6 +46,7 @@ module Distance = struct
     else y
 end
 
+(** symmetric difference between sorted sets *)
 let symmetric_difference x y =
   let rec aux x y =
     match x,y with
@@ -92,17 +93,6 @@ module HPMap = Map.Make(HashPairs)
 module HMap = Map.Make(Hash)
 module HSet = Set.Make(Hash)
 
-let split_by_cores cores xs =
-  let len = List.length xs in
-  let nb_per_cores = max 1 (len / cores) in
-  let (_,left,cored) =
-    List.fold_left
-      (fun (i,xs,acc) x ->
-        if i mod nb_per_cores = 0
-        then 1,[x],(xs::acc)
-        else i+1,x::xs,acc) (1,[],[]) xs in
-  left::cored
-
 let add_if_non_inf assoc_main_subs x ((s,m) as acc) y =
   if x < y
   then
@@ -116,16 +106,11 @@ let add_if_non_inf assoc_main_subs x ((s,m) as acc) y =
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric.
  *)
-let compute_all_sym_diff cores assoc_main_subs xs =
-  let cored = split_by_cores cores xs in
-  let get_fst _ x _ = Some x in
-  let neutral = (HSet.empty, HPMap.empty) in
-  let map xs' =
-    List.fold_left
-      (fun acc x -> List.fold_left (add_if_non_inf assoc_main_subs x) acc xs) neutral xs' in
-  let fold (s1,m1) (s2,m2) = HSet.union s1 s2, HPMap.union get_fst m1 m2 in
-  List.fold_left fold neutral @@
-    Parmap.parmap ~ncores:cores ~chunksize:1 map (Parmap.L cored)
+let compute_all_sym_diff assoc_main_subs xs =
+  List.fold_left
+    (fun acc x -> List.fold_left (add_if_non_inf assoc_main_subs x) acc xs)
+    (HSet.empty, HPMap.empty)
+    xs
 
 let dist semimetric x y =
   let rec aux x y =
@@ -202,11 +187,8 @@ let refine_class tbl (xs : Hash.t wtree list) =
        | Regular p -> compute (merge p u v xs)
   in compute xs
 
-let hierarchical_clustering cores tbl (xs : Hash.t wtree list list) =
-  let cored = split_by_cores cores xs in
-  let rafine_class = List.fold_left (fun acc x -> List.rev_append (refine_class tbl x) acc) [] in
-  Parmap.parmapfold ~ncores:cores ~chunksize:1
-    rafine_class (Parmap.L cored) List.rev_append [] List.rev_append
+let hierarchical_clustering tbl (xs : Hash.t wtree list list) =
+  List.fold_left (fun acc x -> List.rev_append (refine_class tbl x) acc) [] xs
 
 let add_in_cluster map (x,h) =
   match HMap.find_opt h map with
@@ -230,11 +212,15 @@ let add_in_assoc tbl (_,(h,xs)) =
   if not (Hashtbl.mem tbl h)
   then Hashtbl.add tbl h (List.sort compare xs)
 
-let cluster ?cores ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list) =
-  let cores =
-    match cores with
-    | None -> Parmap.get_default_ncores ()
-    | Some x -> x in
+let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list) =
+  let last = ref (Unix.gettimeofday ()) in
+  let time () =
+    let now = Unix.gettimeofday () in
+    let old = !last in
+    last := now;
+    now -. old in
+  let debug msg =
+    Printf.eprintf "[%12f] %s\n%!" (time ()) msg in
   let hash_list =
     match filter_small_trees with
     | None -> hash_list
