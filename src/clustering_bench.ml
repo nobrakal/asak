@@ -234,6 +234,40 @@ let surapproximate_classes tbl xs =
   iter_on_cart_prod try_to_merge xs';
   classes_of_uf xs'
 
+let adjacency_lists tbl xs =
+  let neighbors = Hashtbl.create (List.length xs) in
+  let add_link x y =
+    if x < y && Hashtbl.mem tbl (x, y) then begin
+        Hashtbl.add neighbors x y;
+        Hashtbl.add neighbors y x;
+      end in
+  iter_on_cart_prod add_link xs;
+  neighbors
+
+(* Surapproximate classes by using the transitive closure of xRy <=> dist x y < Infinity.
+   If not (xRy) => dist x y = Infinity, thus x and y cannot be in the same class.
+ *)
+let surapproximate_classes_nouf neighbors xs =
+  let classes = ref [] in
+  let missing_nodes = ref (List.fold_right HSet.add xs HSet.empty) in
+  while not (HSet.is_empty !missing_nodes) do
+    let start = HSet.choose !missing_nodes in
+    let to_visit = Stack.create () in
+    Stack.push start to_visit;
+    let new_class = ref HSet.empty in
+    while not (Stack.is_empty to_visit) do
+      let cur = Stack.pop to_visit in
+      if HSet.mem cur !new_class then ()
+      else begin
+          new_class := HSet.add cur !new_class;
+          List.iter (fun next -> Stack.push next to_visit) (Hashtbl.find_all neighbors cur)
+        end
+    done;
+    missing_nodes := HSet.diff !missing_nodes !new_class;
+    classes := HSet.elements !new_class :: !classes;
+  done;
+  !classes
+
 (* Compute a hierarchical clustering *)
 let refine_class tbl (xs : Hash.t wtree list) =
   let rec compute xs =
@@ -310,6 +344,19 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
   let surapprox = surapproximate_classes hdistance_matrix lst in
   debug "surapproximate_classes done";
+  let neighbors = adjacency_lists hdistance_matrix lst in
+  debug "adjacency_list done";
+  let surapprox_nouf = surapproximate_classes_nouf neighbors lst in
+  debug "surapproximate_classes_nouf done";
+  let check classes classes' =
+    let hset li = List.fold_right HSet.add li HSet.empty in
+    let classes, classes' = List.map hset classes, List.map hset classes' in
+    let sort classes =
+      List.sort (fun cl1 cl2 -> compare (HSet.min_elt cl1) (HSet.min_elt cl2)) classes in
+    let classes, classes' = sort classes, sort classes' in
+    assert (List.for_all2 HSet.equal classes classes') in
+  check surapprox surapprox_nouf;
+  debug "check surapproximate_classes";
   let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
   let dendrogram_list = hierarchical_clustering hdistance_matrix surapprox in
   debug "hierarchical_clustering done";
