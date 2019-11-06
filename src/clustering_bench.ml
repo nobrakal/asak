@@ -111,6 +111,66 @@ let compute_all_sym_diff assoc_main_subs xs =
     (HSet.empty, HPMap.empty)
     xs
 
+let hashtbl_update table ~default k f =
+  match Hashtbl.find table k with
+    | exception Not_found -> Hashtbl.add table k (f default)
+    | v -> Hashtbl.replace table k (f v)
+
+let compute_all_sym_diff_fast children xs =
+  (* For each pair of parent nodes, we want to compute the sum of
+     weights of the children in their symmetric difference.
+
+     The general idea of this algorithm is to compute, for a given
+     parent, the distance to all its "neighbors" (the parents with
+     some children in common) in one traversal of its children. During
+     this traversal we compute, for each neighbor of this parent, the
+     sum of the weights of the children they have in common. From this
+     "common weight" we can deduce the weight of the symmetric
+     difference.
+ *)
+  let parents =
+    (* map each subtree to the list of its parents *)
+    let parents = Hashtbl.create 42 in
+    let add_child ~parent (_weight, child) = Hashtbl.add parents child parent in
+    let add_children parent =
+      List.iter (add_child ~parent) (Hashtbl.find children parent) in
+    List.iter add_children xs; parents in
+  let increment_key table key value =
+    hashtbl_update table ~default:0 key (fun n -> n + value) in
+  let total_weights =
+    (* map each tree to the sum of its children weights *)
+    let weights = Hashtbl.create 42 in
+    let add_child_weight ~parent (weight, _child) =
+      increment_key weights parent weight in
+    let add_weights parent =
+      List.iter (add_child_weight ~parent) (Hashtbl.find children parent) in
+    List.iter add_weights xs;
+    weights in
+  let node_neighbors x =
+    (* map each node to a hashtable of the common weights with its neighbors *)
+    let diffs = Hashtbl.create 42 in
+    let add_child ~parent (weight, child) =
+      let add_common_weight neighbor =
+        if not (parent < neighbor) then ()
+        else increment_key diffs neighbor weight in
+      List.iter add_common_weight (Hashtbl.find_all parents child) in
+    List.iter (add_child ~parent:x) (Hashtbl.find children x);
+    diffs
+  in
+  let nodes = ref HSet.empty in
+  let dists = ref HPMap.empty in
+  let treat_node x =
+    nodes := HSet.add x !nodes;
+    let add_neighbor y common_weight =
+      let dist =
+        Hashtbl.find total_weights x
+        + Hashtbl.find total_weights y
+        - 2 * common_weight in
+      dists := HPMap.add (x, y) dist !dists in
+    Hashtbl.iter add_neighbor (node_neighbors x) in
+  List.iter treat_node xs;
+  !nodes, !dists
+
 let dist semimetric x y =
   let rec aux x y =
     match x,y with
@@ -235,6 +295,16 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
   debug "start";
   let was_seen,distance_matrix = compute_all_sym_diff assoc_main_subs start in
   debug "compute_all_sym_diff done";
+  let was_seen_fast,distance_matrix_fast = compute_all_sym_diff_fast assoc_main_subs start in
+  debug "compute_all_sym_diff_fast done";
+  let check x y =
+    assert (HSet.mem x was_seen_fast);
+    assert (HSet.mem y was_seen_fast);
+    assert (HPMap.find_opt (x, y) distance_matrix
+            = HPMap.find_opt (x, y) distance_matrix_fast);
+  in
+  iter_on_cart_prod check (HSet.elements was_seen);
+  debug "check compute_all_sym_diff";
   let hdistance_matrix = convert_map_to_hm distance_matrix in
   debug "convert_map_to_hm done";
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
