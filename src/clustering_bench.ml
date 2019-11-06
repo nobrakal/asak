@@ -283,6 +283,177 @@ let refine_class tbl (xs : Hash.t wtree list) =
 let hierarchical_clustering tbl (xs : Hash.t wtree list list) =
   List.fold_left (fun acc x -> List.rev_append (refine_class tbl x) acc) [] xs
 
+(* code from the OCaml manual (tutorial on modules) *)
+module PrioQueue =
+  struct
+    type priority = int
+    type 'a queue = Empty | Node of priority * 'a * 'a queue * 'a queue
+    let empty = Empty
+    let is_empty = function
+      | Empty -> true
+      | Node _ -> false
+    let rec insert queue prio elt =
+      match queue with
+        Empty -> Node(prio, elt, Empty, Empty)
+      | Node(p, e, left, right) ->
+          if prio <= p
+          then Node(prio, elt, insert right p e, left)
+          else Node(p, e, insert right prio elt, left)
+    exception Queue_is_empty
+    let top = function
+      | Empty -> raise Queue_is_empty
+      | Node(prio, elt, _, _) -> (prio, elt)
+    let rec remove_top = function
+        Empty -> raise Queue_is_empty
+      | Node(_prio, _elt, left, Empty) -> left
+      | Node(_prio, _elt, Empty, right) -> right
+      | Node(_prio, _elt, (Node(lprio, lelt, _, _) as left),
+                          (Node(rprio, relt, _, _) as right)) ->
+          if lprio <= rprio
+          then Node(lprio, lelt, remove_top left, right)
+          else Node(rprio, relt, left, remove_top right)
+    let extract = function
+        Empty -> raise Queue_is_empty
+      | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
+  end;;
+
+
+let hierarchical_clustering_fast tbl classes =
+  let cluster connex_class =
+    (* Within each connected component, we can expect most nodes to
+       have a distance to each other. We store nodes as dense arrays
+       by indexing the input leaves from 0 to N-1, and we store
+       distances between nodes in a dense matrix.
+
+       At most N-1 non-leaf nodes will be created by the clustering process.
+       (One way to prove this is to look at the number of nodes that are "roots"
+       (do not have a parent) at any point in the construction. At the beginning,
+       the N leaves are all roots. Each time we add a new node, its children were
+       roots and are not anymore, so have one less root. At the end, there is at least
+       one root.)
+       So we index all intermediate trees in the construction from 0 to 2N-2, starting
+       with the initial leaves, and filling the end of those arrays/matrices with nodes
+       as they constructed.
+
+       The fast algorithm keeps the following state:
+       - [nodes]: a mapping from indices to trees
+       - [roots]: a boolean array to know which trees are roots at the current step
+       - [distances]: a matrix of distances between all known nodes
+       - [next_slot]: the index of the next node to be constructed
+       - [queue]: a priority queue of pairs of nodes,
+
+       At a given step, only the indices from [0] to [!next_slot - 1] represent valid trees,
+       so the values in [roots], [distances] and [nodes] above [!next_slot] are invalid.
+
+       Because distances are symmetric, we store the distance between indices [i] and [j]
+       in [distances.(min i j).(max i j)].
+       (We could store only a diagonal matrix to save space.)
+     *)
+    let size = List.length connex_class in (* N *)
+    let class_array = Array.of_list connex_class in
+    let nodes =
+      List.map (fun x -> Leaf x) connex_class
+      @ List.init (size - 1) (fun _ -> Leaf (List.hd connex_class))
+      |> Array.of_list in
+    let roots = Array.make (2 * size - 1) true in
+    let queue = ref PrioQueue.empty in
+    let distances =
+      (* construct the initial distance matrix between leaves,
+         and initialize [queue] with the N^2 pairs of leaves *)
+      let dist_leaves i j =
+        let x, y = class_array.(i), class_array.(j) in
+        match Hashtbl.find tbl (if x < y then (x, y) else (y, x)) with
+          | dist ->
+             queue := PrioQueue.insert !queue dist (i, j);
+             Distance.Regular dist
+          | exception Not_found -> Distance.Infinity in
+      Array.init (2 * size - 1) (fun i -> Array.init (2 * size - 1) (fun j ->
+        if i < size && j < size && i < j
+        then dist_leaves i j
+        else Distance.Regular (-1))) in
+    let next_slot = ref size in
+    while not (PrioQueue.is_empty !queue || !next_slot = 2 * size - 1) do
+      let (dist, (i, j), rest) = PrioQueue.extract !queue in
+      (* We use the priority queue to select the pair of closest nodes.
+         We can only pair those nodes if they are not already roots,
+         we skip all the pairs that contain a non-root node. *)
+      queue := rest;
+      assert (i <> j);
+      if not (roots.(i) && roots.(j)) then ()
+      else begin
+          let x, y = nodes.(i), nodes.(j) in
+          let k = !next_slot in
+          assert (k < 2 * size - 1);
+          nodes.(k) <- Node(dist, x, y);
+          incr next_slot;
+          roots.(i) <- false;
+          roots.(j) <- false;
+          assert roots.(k);
+          (* We create a new node [k], whose children [i] and [j] are not roots anymore.
+
+             (this may invalidate many pairs in [queue], but they stay there and
+              will be discarded when picked; [queue] is large so cleaning it up
+              would be too costly)
+
+             We now compute the distance between [k] and all older root
+             nodes (indices upto [k - 1]). At the same time we add each
+             pair ([k], [other_root]) into the priority queue.
+           *)
+          for n = 0 to k - 1 do
+            if not roots.(n) then ()
+            else begin
+                let dist =
+                  Distance.max distances.(min i n).(max i n) distances.(min j n).(max j n) in
+                assert (distances.(n).(k) = Distance.Regular (-1));
+                distances.(n).(k) <- dist;
+                match dist with
+                  | Distance.Infinity -> ()
+                  | Distance.Regular dist ->
+                     queue := PrioQueue.insert !queue dist (k, n)
+              end
+          done;
+        end;
+    done;
+    (* Complexity analysis: the priority queue is large, of the order
+       of O(N^2) entries during the traversal -- at a maintenance cost
+       of O(N^2 log N) with our implementation.
+
+       Each root-pair in the queue requires O(N) work to update the
+       distance matrix and the priority queue.
+
+       Naively this gives a O(N^3) bound, but in fact we encounter
+       much fewer than N^2 root-pairs: each time we see a minimal
+       root-pair, we create a new node, and we know that we create
+       a most N nodes. So among the O(N^2) elements of the queue,
+       only N require O(N) work, giving a total complexity of O(N^2 log N).
+     *)
+    List.concat (List.init !next_slot (fun i -> if roots.(i) then [nodes.(i)] else []))
+  in
+  List.concat (List.map cluster classes)
+
+
+(*      ---4---
+        |     |
+  ---1---     ---2---
+  A     B     C     D
+*)
+let test1 =
+  let distances = [
+      (('A', 'B'), 1);
+      (('A', 'C'), 2);
+      (('A', 'D'), 3);
+      (('B', 'C'), 3);
+      (('B', 'D'), 4);
+      (('C', 'D'), 2);
+    ] |> List.to_seq |> Hashtbl.of_seq
+  in
+  assert (
+    (hierarchical_clustering_fast distances [['A'; 'B'; 'C'; 'D']])
+    (* note: the order of A/B and C/D classes in the toplevel node
+       is irrelevant, and an implementation that would swap them
+       would also be correct *)
+    = [Node(4, Node (2, Leaf 'C', Leaf 'D'), Node (1, Leaf 'A', Leaf 'B'))])
+
 let add_in_cluster map (x,h) =
   match HMap.find_opt h map with
   | None -> HMap.add h [x] map
@@ -357,9 +528,26 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
     assert (List.for_all2 HSet.equal classes classes') in
   check surapprox surapprox_nouf;
   debug "check surapproximate_classes";
-  let surapprox = List.map (List.map (fun x -> Leaf x)) surapprox in
-  let dendrogram_list = hierarchical_clustering hdistance_matrix surapprox in
+  let surapprox_leaves = List.map (List.map (fun x -> Leaf x)) surapprox in
+  let dendrogram_list = hierarchical_clustering hdistance_matrix surapprox_leaves in
   debug "hierarchical_clustering done";
+  let dendrogram_list_fast = hierarchical_clustering_fast hdistance_matrix surapprox in
+  debug "hierarchical_clustering_fast done";
+  ignore (dendrogram_list, dendrogram_list_fast);
+  (* Note: despite my efforts, the clustering results are different between the slow
+     and the fast algorithm. I don't know if there is a bug remaining in the fast
+     algorithm. There are various ways in which two correct implementations could give
+     distinct results:
+
+     - the order of the two childrean of each node is irrelevant
+     - when there exist several root pairs with the same minimal distance,
+       we do not specify which one should be picked, and the choice influences
+       the shape of the final result (picking a pair may make some other pairings
+       impossible)
+
+     In particular, if all nodes are at the same distance to each other,
+     many different result trees are possible.
+  *)
   let cluster =
     List.sort
       (fun x y -> - (compare_size_of_trees x y))
