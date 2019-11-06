@@ -33,7 +33,7 @@ module Distance = struct
        | Regular y' -> compare x' y'
 
   let lt x y =
-    compare x y = -1
+    compare x y < 0
 
   let max x y =
     if compare x y <= 0
@@ -52,17 +52,16 @@ let symmetric_difference x y =
     match x,y with
     | [],z|z,[] -> false,z
     | xx::xs,yy::ys ->
-       match compare xx yy with
-       | (-1) ->
-          let b,ndiff = aux xs y in
-          b,xx::ndiff
-       | 0 ->
-          let _,ndiff = aux xs ys in
-          true,ndiff
-       | 1 ->
+       let cmp = compare xx yy in
+       if cmp < 0 then
+         let b,ndiff = aux xs y in
+         b,xx::ndiff
+       else if cmp > 0 then
           let b,ndiff = aux x ys in
           b,yy::ndiff
-       | _ -> failwith "symmetric_difference"
+       else
+          let _,ndiff = aux xs ys in
+          true,ndiff
   in
   let b,res = aux x y in
   if b
