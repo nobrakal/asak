@@ -15,3 +15,9 @@
   (modules inspect_db)
   (libraries str asak)
 )
+
+(executable
+  (name build_assoc)
+  (modules build_assoc)
+  (libraries str asak)
+)

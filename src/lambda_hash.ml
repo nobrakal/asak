@@ -202,5 +202,4 @@ let map_snd f xs = List.map (fun (x,y) -> x,f y) xs
 let hash_all config hard_weight xs =
   map_snd (hash_lambda config (Hard hard_weight)) xs
 
-let escape_hash_list xs =
-  map_snd (fun ((p,h),xs) -> (p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs) xs
+let escape_hash ((p,h),xs) = (p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs

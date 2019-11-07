@@ -37,6 +37,10 @@ val hash_lambda :
   threshold ->
   Lambda.lambda -> hash
 
+(** Utilities *)
+
+val map_snd : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
+
 (** Using a hard threshold, hash a list of lambda expressions from  {! Parse_structure.read_structure }. *)
 val hash_all :
   config ->
@@ -45,5 +49,5 @@ val hash_all :
   ('a * hash) list
 
 (** Escape hashses. *)
-val escape_hash_list :
-  ('a * hash) list -> ('a * hash) list
+val escape_hash :
+  hash -> hash
