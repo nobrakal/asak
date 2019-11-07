@@ -65,7 +65,7 @@ let semimetric x y =
 
 module Hash =
   struct
-    type t = int * string
+    type t = Lambda_hash.fingerprint
     let compare = compare
   end
 
@@ -200,8 +200,10 @@ let add_in_cluster map (x,h) =
   | None -> HMap.add h [x] map
   | Some ys -> HMap.add h (x::ys) map
 
+let initial_cluster hash_list =  List.fold_left add_in_cluster HMap.empty hash_list
+
 let create_start_cluster hash_list =
-  let cluster = List.fold_left add_in_cluster HMap.empty hash_list in
+  let cluster = initial_cluster hash_list in
   HMap.fold (fun k xs acc -> (k,xs)::acc) cluster []
 
 let compare_size_of_trees x y =

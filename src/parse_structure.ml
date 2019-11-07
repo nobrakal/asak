@@ -73,7 +73,6 @@ let lambda_of_expression expr =
       simplify_lambda @@
         Translcore.transl_exp expr
 
-
 let get_name_of_pat pat =
   match pat.pat_desc with
   | Tpat_var(id, _) -> Some id

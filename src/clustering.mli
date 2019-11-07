@@ -18,6 +18,14 @@ module Distance : sig
 
 end
 
+module Hash :
+  sig
+    type t = Lambda_hash.fingerprint
+    val compare : t -> t -> int
+  end
+
+module HMap : Map.S with type key = Hash.t
+
 (** Compute the symmetric difference of two {e sorted} lists.
     Return None if the intersection was empty. *)
 val symmetric_difference : 'a list -> 'a list -> 'a list option
@@ -41,6 +49,9 @@ The first argument must be an equivalent of {!semimetric}.
 val dist :
   ('a -> 'a -> Distance.t) ->
   'a Wtree.wtree -> 'a Wtree.wtree -> Distance.t
+
+(** Create initial cluster, grouping labels by fingerprint *)
+val initial_cluster : ('a * Lambda_hash.fingerprint) list -> 'a list HMap.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
     clustering using {!semimetric}.
