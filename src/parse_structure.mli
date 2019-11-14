@@ -29,6 +29,11 @@ val find_let_in_parsetree_items :
 
 (** Return all let bindings of a typedtree converted in lambda expressions.
     The string is the module prefix, usually empty. *)
+val read_structure_with_loc :
+  string -> Typedtree.structure -> ((string * Location.t) * Lambda.lambda) list
+
+(** Return all let bindings of a typedtree converted in lambda expressions.
+    The string is the module prefix, usually empty. *)
 val read_structure : string -> Typedtree.structure -> (string * Lambda.lambda) list
 
 (** Read a valid OCaml fragment and compile every toplevel definitions to Lambda. *)

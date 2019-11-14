@@ -12,11 +12,13 @@ let extract_dir_from_file f =
   with
   | Not_found -> ".",f
 
-let analysis database (name,hash) =
+let analysis database ((name,loc),hash) =
   match Asak.Clustering.HMap.find_opt hash database with
   | None -> ()
   | Some xs ->
-     Printf.printf "%s has the same hash than:\n" name;
+     Printf.printf "%s in " name;
+     Location.print_loc Format.std_formatter loc;
+     Printf.printf " has the same hash than:\n";
      List.iter (Printf.printf "* %s\n") xs;
      print_endline ""
 
@@ -81,7 +83,7 @@ let main database full_file =
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
   let typedtree = find_cmt_in_paths file load in
   let name,typedtree = get_typedtree load typedtree in
-  let lambdas = Asak.Parse_structure.read_structure name typedtree in
+  let lambdas = Asak.Parse_structure.read_structure_with_loc name typedtree in
   let lambdas =
     Asak.Lambda_hash.map_snd
       (fun x -> Asak.Lambda_normalization.(normalize_local_variables (inline_all x)))
