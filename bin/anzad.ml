@@ -1,3 +1,5 @@
+open Location
+
 let load_file f =
   let ic = open_in f in
   let n = in_channel_length ic in
@@ -12,15 +14,28 @@ let extract_dir_from_file f =
   with
   | Not_found -> ".",f
 
-let analysis database ((name,loc),hash) =
+let analysis is_for_emacs database ((name,({loc_start;loc_end;_} as loc)),hash) =
+  let open Lexing in
   match Asak.Clustering.HMap.find_opt hash database with
   | None -> ()
   | Some xs ->
-     Printf.printf "%s in " name;
-     Location.print_loc Format.std_formatter loc;
-     Printf.printf " has the same hash than:\n";
-     List.iter (Printf.printf "* %s\n") xs;
-     print_endline ""
+     if is_for_emacs
+     then
+       begin
+         Printf.printf "%d;%d;%d;%d\n"
+           loc_start.pos_lnum
+           loc_start.pos_cnum
+           loc_end.pos_lnum
+           loc_end.pos_cnum
+       end
+     else
+       begin
+         Printf.printf "%s in " name;
+         Location.print_loc Format.std_formatter loc;
+         Printf.printf " has the same hash than:\n";
+         List.iter (Printf.printf "* %s\n") xs;
+         print_endline ""
+       end
 
 let get_typedtree load f =
   Compmisc.init_path true;
@@ -77,7 +92,7 @@ let find_cmt_in_paths file paths =
   | None -> failwith "could not find the corresponding cmt"
   | Some x -> x
 
-let main database full_file =
+let main is_for_emacs database full_file =
   let dir,file = extract_dir_from_file full_file in
   let merlin = dir ^ "/.merlin" in
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
@@ -93,9 +108,14 @@ let main database full_file =
   let main_hash_list = List.map (fun (x,(h,_)) -> x,h) hash_list in
   let database : string list Asak.Clustering.HMap.t =
     Marshal.from_channel (open_in_bin database) in
-  List.iter (analysis database) main_hash_list
+  List.iter (analysis is_for_emacs database) main_hash_list
+
+let print_help () =
+  print_endline "usage: anzad db.asak dir/file.ml";
+  print_endline "NB: dir must contains a .merlin"
 
 let () =
-  print_endline "usage: anzad db.asak dir/file.ml";
-  print_endline "NB: dir must contains a .merlin";
-  main Sys.argv.(1) Sys.argv.(2)
+  match Sys.argv.(1) with
+  | "-h" -> print_help ()
+  | "-e" -> main true Sys.argv.(2) Sys.argv.(3)
+  | x -> main false x Sys.argv.(2)

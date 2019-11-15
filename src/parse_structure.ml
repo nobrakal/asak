@@ -124,8 +124,9 @@ let rec read_module_expr prefix m =
 
 and read_value_binding prefix x =
   match get_name_of_pat x.vb_pat with
-  | Some name -> Some
-     ((prefix ^ "." ^ (Ident.name name), x.vb_loc), lambda_of_expression x.vb_expr)
+  | Some name ->
+     let name = prefix ^ "." ^ (Ident.name name) in
+     Some ((name , x.vb_pat.pat_loc), lambda_of_expression x.vb_expr)
   | None -> None
 
 and read_item_desc prefix x =
