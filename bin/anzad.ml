@@ -22,16 +22,14 @@ let analysis is_for_emacs database ((name,({loc_start;loc_end;_} as loc)),hash) 
      if is_for_emacs
      then
        begin
-         Printf.printf "%d;%d;%d;%d\n"
-           loc_start.pos_lnum
-           loc_start.pos_cnum
-           loc_end.pos_lnum
-           loc_end.pos_cnum
+         Printf.printf "%d;%d;* %s#" loc_start.pos_cnum loc_end.pos_cnum
+           (String.concat "\n* " xs)
        end
      else
        begin
          Printf.printf "%s in " name;
          Location.print_loc Format.std_formatter loc;
+         Format.pp_print_flush Format.std_formatter ();
          Printf.printf " has the same hash than:\n";
          List.iter (Printf.printf "* %s\n") xs;
          print_endline ""
