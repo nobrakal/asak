@@ -96,6 +96,6 @@ let main database full_file =
   List.iter (analysis database) main_hash_list
 
 let () =
-  print_endline "usage: mis.exe db.asak dir/file.ml";
+  print_endline "usage: anzad db.asak dir/file.ml";
   print_endline "NB: dir must contains a .merlin";
   main Sys.argv.(1) Sys.argv.(2)

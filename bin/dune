@@ -1,4 +1,8 @@
 (executable
-  (name mis)
+  (name anzad)
   (libraries str asak)
 )
+
+(install
+ (section bin)
+ (files (anzad.exe as anzad)))
