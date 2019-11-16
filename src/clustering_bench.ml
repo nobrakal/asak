@@ -116,6 +116,9 @@ let hashtbl_update table ~default k f =
     | exception Not_found -> Hashtbl.add table k (f default)
     | v -> Hashtbl.replace table k (f v)
 
+let increment_key table key value =
+  hashtbl_update table ~default:0 key (fun n -> n + value)
+
 let compute_all_sym_diff_fast children xs =
   (* For each pair of parent nodes, we want to compute the sum of
      weights of the children in their symmetric difference.
@@ -135,8 +138,6 @@ let compute_all_sym_diff_fast children xs =
     let add_children parent =
       List.iter (add_child ~parent) (Hashtbl.find children parent) in
     List.iter add_children xs; parents in
-  let increment_key table key value =
-    hashtbl_update table ~default:0 key (fun n -> n + value) in
   let total_weights =
     (* map each tree to the sum of its children weights *)
     let weights = Hashtbl.create 42 in
@@ -154,6 +155,69 @@ let compute_all_sym_diff_fast children xs =
         if not (parent < neighbor) then ()
         else increment_key diffs neighbor weight in
       List.iter add_common_weight (Hashtbl.find_all parents child) in
+    List.iter (add_child ~parent:x) (Hashtbl.find children x);
+    diffs
+  in
+  let nodes = ref HSet.empty in
+  let dists = ref HPMap.empty in
+  let treat_node x =
+    nodes := HSet.add x !nodes;
+    let add_neighbor y common_weight =
+      let dist =
+        Hashtbl.find total_weights x
+        + Hashtbl.find total_weights y
+        - 2 * common_weight in
+      dists := HPMap.add (x, y) dist !dists in
+    Hashtbl.iter add_neighbor (node_neighbors x) in
+  List.iter treat_node xs;
+  !nodes, !dists
+
+let compute_all_sym_diff_fast_multiocc children xs =
+  (* For each pair of parent nodes, we want to compute the sum of
+     weights of the children in their symmetric difference.
+
+     The general idea of this algorithm is to compute, for a given
+     parent, the distance to all its "neighbors" (the parents with
+     some children in common) in one traversal of its children. During
+     this traversal we compute, for each neighbor of this parent, the
+     sum of the weights of the children they have in common. From this
+     "common weight" we can deduce the weight of the symmetric
+     difference.
+ *)
+  let parents =
+    (* map each subtree to its occurrence count in its parents;
+       (an occurrence count is itself a map from parent to the number
+        of occurrences of the subtree) *)
+    let parents = Hashtbl.create 42 in
+    let add_child ~parent (_weight, child) =
+      hashtbl_update parents ~default:(Hashtbl.create 5) child
+        (fun occurrence_map ->
+          increment_key occurrence_map parent 1;
+          occurrence_map) in
+    let add_children parent =
+      List.iter (add_child ~parent) (Hashtbl.find children parent) in
+    List.iter add_children xs; parents in
+  let total_weights =
+    (* map each tree to the sum of its children weights *)
+    let weights = Hashtbl.create 42 in
+    let add_child_weight ~parent (weight, _child) =
+      increment_key weights parent weight in
+    let add_weights parent =
+      List.iter (add_child_weight ~parent) (Hashtbl.find children parent) in
+    List.iter add_weights xs;
+    weights in
+  let node_neighbors x =
+    (* map each node to a hashtable of the common weights with its neighbors *)
+    let diffs = Hashtbl.create 42 in
+    let add_child ~parent (weight, child) =
+      let child_occurrences = Hashtbl.find parents child in
+      let occurrences_in_parent = Hashtbl.find child_occurrences parent in
+      let add_common_weight neighbor occurrences_in_neighbor =
+        if not (parent < neighbor) then ()
+        else
+          let common_occurrences = min occurrences_in_parent occurrences_in_neighbor in
+          increment_key diffs neighbor (weight * common_occurrences) in
+      Hashtbl.iter add_common_weight child_occurrences in
     List.iter (add_child ~parent:x) (Hashtbl.find children x);
     diffs
   in
@@ -500,13 +564,17 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
   debug "start";
   let was_seen,distance_matrix = compute_all_sym_diff assoc_main_subs start in
   debug "compute_all_sym_diff done";
-  let was_seen_fast,distance_matrix_fast = compute_all_sym_diff_fast assoc_main_subs start in
+  let _,distance_matrix_fast = compute_all_sym_diff_fast assoc_main_subs start in
   debug "compute_all_sym_diff_fast done";
+  let _,distance_matrix_fast_multiocc =
+    compute_all_sym_diff_fast_multiocc assoc_main_subs start in
+  debug "compute_all_sym_diff_fast_multiocc done";
   let check x y =
-    assert (HSet.mem x was_seen_fast);
-    assert (HSet.mem y was_seen_fast);
     assert (HPMap.find_opt (x, y) distance_matrix
-            = HPMap.find_opt (x, y) distance_matrix_fast);
+            = HPMap.find_opt (x, y) distance_matrix_fast_multiocc);
+    if (HPMap.find_opt (x, y) distance_matrix
+        <> HPMap.find_opt (x, y) distance_matrix_fast)
+    then prerr_endline "distance_matrix_fast (no multiocc) got the wrong result";
   in
   iter_on_cart_prod check (HSet.elements was_seen);
   debug "check compute_all_sym_diff";
@@ -599,6 +667,13 @@ let fake_inputs ~set_size ~cluster_size ~cluster_nb =
     seed :: List.init cluster_size (fun _ -> mutate_hashes seed) in
   List.concat (List.map from_seed seeds)
 
+let multiocc_testcase =
+  (* from @nobrakal *)
+  let child = 1,"child" in
+  let first = (100,"first"),[child] in
+  let second = (100,"second"),[child; child] in
+  [("first",first);("second",second)]
+
 let () =
   prerr_endline "usage: ./foo set_size cluster_size cluster_nb";
   let set_size = int_of_string Sys.argv.(1) in
@@ -606,7 +681,7 @@ let () =
   let cluster_nb = int_of_string Sys.argv.(3) in
   let inputs = fake_inputs ~set_size ~cluster_size ~cluster_nb
                |> List.map (fun hashes -> (Digest.to_hex (snd (fst hashes))), hashes) in
-  let result = cluster inputs in
+  let result = cluster (multiocc_testcase @ inputs) in
   (* print_cluster (fun x -> x) result; *)
   ignore result
 
