@@ -9,10 +9,6 @@ type 'a wtree =
   | Node of (int * 'a wtree * 'a wtree)
   | Leaf of 'a
 
-let _either f g = function
-  | Ok x -> Ok (f x)
-  | Error x -> Error (g x)
-
 let fold_tree n l =
   let rec aux = function
     | Leaf a -> l a
