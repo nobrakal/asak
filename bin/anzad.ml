@@ -35,12 +35,19 @@ let analysis is_for_emacs database ((name,({loc_start;loc_end;_} as loc)),hash) 
          print_endline ""
        end
 
+let load_path_init xs =
+#if OCAML_VERSION >= (4, 08, 0)
+  Load_path.init xs
+#else
+  Config.load_path := xs @ !Config.load_path
+#endif
+
 let get_typedtree load f =
-  Compmisc.init_path true;
+  Asak.Parse_structure.init_path ();
   let cmt = Cmt_format.read_cmt f in
   match cmt.cmt_annots with
   | Implementation structure ->
-     Load_path.init (load @ cmt.cmt_loadpath);
+     load_path_init (load @ cmt.cmt_loadpath);
      let map =
        { Tast_mapper.default
        with env = fun _ env -> Envaux.env_of_only_summary env } in

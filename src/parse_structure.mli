@@ -38,3 +38,6 @@ val read_structure : string -> Typedtree.structure -> (string * Lambda.lambda) l
 
 (** Read a valid OCaml fragment and compile every toplevel definitions to Lambda. *)
 val read_string : string -> (string * Lambda.lambda) list
+
+(** An OCaml version-independent init_path *)
+val init_path : unit -> unit

@@ -1,6 +1,7 @@
 (executable
   (name anzad)
   (libraries str asak)
+  (preprocess (action (run %{bin:cppo} -n -V OCAML:%{ocaml_version} %{input-file})))
 )
 
 (install
