@@ -32,6 +32,15 @@
 
 ;;; Code:
 
+(defgroup anzad nil
+  "Tools for running anzad."
+  :group 'tools)
+
+(defcustom asak_db ""
+  "The path to the asak database."
+  :type 'string
+  :group 'anzad)
+
 (defun anzad ()
   "Call asak on the file of the current buffer."
   (interactive)
