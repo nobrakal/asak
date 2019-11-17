@@ -72,21 +72,22 @@ let add_prefix prefix xs =
 (** Given a file = "source.ml", will search for a file with a "Source.cmt" suffix
     in the given path *)
 let find_cmt_in_paths file paths =
+  let file_prefix = String.(sub file 0 (rindex file '.')) in
   let mod_name =
     let open String in
-    let start = sub file 0 (rindex file '.') in
-    let f = make 1 (Char.uppercase_ascii (get start 0)) in
-    f ^ (sub start 1 (length start - 1))
+    let f = make 1 (Char.uppercase_ascii (get file_prefix 0)) in
+    f ^ (sub file_prefix 1 (length file_prefix - 1))
   in
-  let cmt_end = mod_name ^ ".cmt" in
-  let is_suffix s x =
+  let add_cmt x = x ^ ".cmt" in
+  let possibilities = [add_cmt file_prefix; add_cmt mod_name] in
+  let is_suffix x s =
     try
       s = String.(sub x (length x - length s) (length s))
     with
     | Invalid_argument _ -> false in
   let aux dir =
     let files = Sys.readdir dir in
-    List.find (is_suffix cmt_end) (Array.to_list files) in
+    List.find (fun x -> List.exists (is_suffix x) possibilities) (Array.to_list files) in
   let res =
     List.fold_left
       (fun acc x ->
