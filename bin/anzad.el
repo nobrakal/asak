@@ -64,6 +64,7 @@
 				  (when (eq z 'entered) (message "%s" (nth 2 infos)))))))
       )
     )
+  (set-buffer-modified-p nil)
   )
 
 (provide 'anzad)
