@@ -41,10 +41,28 @@
   :type 'string
   :group 'anzad)
 
+(setq prev_call ())
+
+(cursor-sensor-mode 1)
+
+(defun clean-anzad-prev-call ()
+  "Remove annotations from a previous call of anzad."
+  (interactive)
+  (dolist (elem prev_call)
+    (let ((start (nth 0 elem))
+	  (end   (nth 1 elem)))
+      (remove-list-of-text-properties start end
+				      (list 'font-lock-face 'cursor-sensor-functions))
+      )
+    )
+  (setq prev_call ())
+  (set-buffer-modified-p nil)
+  )
+
 (defun anzad ()
   "Call asak on the file of the current buffer."
   (interactive)
-  (cursor-sensor-mode 1)
+  (clean-anzad-prev-call)
   (shell-command-to-string "dune build @check")
   (setq letbinds
 	(butlast
@@ -61,7 +79,8 @@
        (put-text-property start end 'font-lock-face '(:foreground "red"))
        (put-text-property start end 'cursor-sensor-functions
 			  (list (lambda (x y z)
-				  (when (eq z 'entered) (message "%s" (nth 2 infos)))))))
+				  (when (eq z 'entered) (message "%s" (nth 2 infos))))))
+       (setq prev_call (cons (list start end) prev_call)))
       )
     )
   (set-buffer-modified-p nil)
