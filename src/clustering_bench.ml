@@ -218,7 +218,9 @@ let compute_all_sym_diff_fast_multiocc children xs =
           let common_occurrences = min occurrences_in_parent occurrences_in_neighbor in
           increment_key diffs neighbor (weight * common_occurrences) in
       Hashtbl.iter add_common_weight child_occurrences in
-    List.iter (add_child ~parent:x) (Hashtbl.find children x);
+    Hashtbl.find children x
+    |> HSet.of_list
+    |> HSet.iter (add_child ~parent:x);
     diffs
   in
   let nodes = ref HSet.empty in
@@ -670,8 +672,8 @@ let fake_inputs ~set_size ~cluster_size ~cluster_nb =
 let multiocc_testcase =
   (* from @nobrakal *)
   let child = 1,"child" in
-  let first = (100,"first"),[child] in
-  let second = (100,"second"),[child; child] in
+  let first = (100,"first"),[child; child] in
+  let second = (100,"second"),[child] in
   [("first",first);("second",second)]
 
 let () =
