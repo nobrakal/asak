@@ -17,12 +17,11 @@ The entry-point takes optional arguments to specify on which package to begin an
 Use the `run_on_lambdas` executable. It takes several arguments:
 
 ```
-run_on_lambdas cores output_db.asak threshold [FILES]
+run_on_lambdas output_db.asak threshold [FILES]
 ```
 
 where:
 
-* `cores` is the number of cores of the computer to use.
 * `output_db.asak` is a file to store the computed clustering. for further investigation.
 * `threshold` is an integer threshold to keep sub-AST.
 * `[FILES]` the collection of lambdas to inspect. Usually something like `copy_of_docker_volume/*`

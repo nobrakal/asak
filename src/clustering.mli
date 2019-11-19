@@ -26,30 +26,6 @@ module Hash :
 
 module HMap : Map.S with type key = Hash.t
 
-(** Compute the symmetric difference of two {e sorted} lists.
-    Return None if the intersection was empty. *)
-val symmetric_difference : 'a list -> 'a list -> 'a list option
-
-(** Return the sum of the weight of the symmetric difference
-    of the two arguments (or [Infinity] if the intersection was empty *)
-val semimetric :
-  (int * 'a) list -> (int * 'a) list -> Distance.t
-
-(** Compute recursively the dissimilarity between two clusters:
-
-- If there is two {!Wtree.Leaf}, use the sum of the weight of the symmetric difference
-  of their hash lists (or [Infinity] if the intersection was empty).
-- If there is a {!Wtree.Node}, use the {e maximum} of the dissimilarities between the sub-trees
-  and the other tree.
-
-This is not a mathematically valid distance, but only a semimetric.
-
-The first argument must be an equivalent of {!semimetric}.
- *)
-val dist :
-  ('a -> 'a -> Distance.t) ->
-  'a Wtree.wtree -> 'a Wtree.wtree -> Distance.t
-
 (** Create initial cluster, grouping labels by fingerprint *)
 val initial_cluster : ('a * Lambda_hash.fingerprint) list -> 'a list HMap.t
 
@@ -69,8 +45,7 @@ val initial_cluster : ('a * Lambda_hash.fingerprint) list -> 'a list HMap.t
     The list is sorted with biggest trees first.
  *)
 val cluster :
-  ?cores:int
-  -> ?filter_small_trees:int
+  ?filter_small_trees:int
   -> ('a * Lambda_hash.hash) list -> ('a list) wtree list
 
 (** Print recursively a cluster given a printer for the labels. *)
