@@ -200,7 +200,7 @@ let init =
 #if OCAML_VERSION >= (4, 06, 0)
   List.init
 #else
-  let rec aux =
+  let rec aux i n f =
     if i >= n then []
     else
       let r = f i in
