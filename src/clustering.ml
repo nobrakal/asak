@@ -196,6 +196,18 @@ module PrioQueue = struct
     | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
 end
 
+let init =
+#if OCAML_VERSION >= (4, 06, 0)
+  List.init
+#else
+  let rec aux =
+    if i >= n then []
+    else
+      let r = f i in
+      r :: aux (i+1) n f
+  in aux
+#endif
+
 let hierarchical_clustering_fast tbl classes =
   let cluster connex_class =
     (* Within each connected component, we can expect most nodes to
@@ -231,7 +243,7 @@ let hierarchical_clustering_fast tbl classes =
     let class_array = Array.of_list connex_class in
     let nodes =
       List.map (fun x -> Leaf x) connex_class
-      @ List.init (size - 1) (fun _ -> Leaf (List.hd connex_class))
+      @ init (size - 1) (fun _ -> Leaf (List.hd connex_class))
       |> Array.of_list in
     let roots = Array.make (2 * size - 1) true in
     let queue = ref PrioQueue.empty in
@@ -305,7 +317,7 @@ let hierarchical_clustering_fast tbl classes =
        a most N nodes. So among the O(N^2) elements of the queue,
        only N require O(N) work, giving a total complexity of O(N^2 log N).
      *)
-    List.concat (List.init !next_slot (fun i -> if roots.(i) then [nodes.(i)] else []))
+    List.concat (init !next_slot (fun i -> if roots.(i) then [nodes.(i)] else []))
   in
   List.concat (List.map cluster classes)
 
