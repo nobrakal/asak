@@ -196,16 +196,16 @@ module PrioQueue = struct
     | Node(prio, elt, _, _) as queue -> (prio, elt, remove_top queue)
 end
 
-let init =
+let init len f =
 #if OCAML_VERSION >= (4, 06, 0)
-  List.init
+  List.init len f
 #else
   let rec aux i n f =
     if i >= n then []
     else
       let r = f i in
       r :: aux (i+1) n f
-  in aux
+  in aux 0 len f
 #endif
 
 let hierarchical_clustering_fast tbl classes =
