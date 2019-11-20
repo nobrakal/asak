@@ -58,7 +58,7 @@ let increment_key table key value =
 
 (* NB: the returned hashtable contains only keys (x,y) where x < y.
    This is not a problem since the distance is symmetric. *)
-let compute_all_sym_diff_fast_multiocc children xs =
+let compute_all_sym_diff children xs =
   (* For each pair of parent nodes, we want to compute the sum of
      weights of the children in their symmetric difference.
 
@@ -139,7 +139,7 @@ let adjacency_lists tbl xs =
 (* Surapproximate classes by using the transitive closure of xRy <=> dist x y < Infinity.
    If not (xRy) => dist x y = Infinity, thus x and y cannot be in the same class.
  *)
-let surapproximate_classes_nouf neighbors xs =
+let surapproximate_classes neighbors xs =
   let classes = ref [] in
   let missing_nodes = ref (List.fold_right HSet.add xs HSet.empty) in
   while not (HSet.is_empty !missing_nodes) do
@@ -208,7 +208,7 @@ let init len f =
   in aux 0 len f
 #endif
 
-let hierarchical_clustering_fast tbl classes =
+let hierarchical_clustering tbl classes =
   let cluster connex_class =
     (* Within each connected component, we can expect most nodes to
        have a distance to each other. We store nodes as dense arrays
@@ -352,12 +352,11 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
       (fun (acc,m) (main_hash,xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
-  let was_seen,hdistance_matrix =
-    compute_all_sym_diff_fast_multiocc assoc_main_subs start in
+  let was_seen,hdistance_matrix = compute_all_sym_diff assoc_main_subs start in
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
-  let neighbors = adjacency_lists hdistance_matrix lst in
-  let surapprox = surapproximate_classes_nouf neighbors lst in
-  let dendrogram_list = hierarchical_clustering_fast hdistance_matrix surapprox in
+  let neighobrs = adjacency_lists hdistance_matrix lst in
+  let surapprox = surapproximate_classes neighobrs lst in
+  let dendrogram_list = hierarchical_clustering hdistance_matrix surapprox in
   let cluster =
     List.sort
       (fun x y -> - (compare_size_of_trees x y))
