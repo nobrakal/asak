@@ -110,7 +110,7 @@ let compute_all_sym_diff_fast_multiocc children xs =
     diffs
   in
   let nodes = ref HSet.empty in
-  let dists = ref HPMap.empty in
+  let dists = Hashtbl.create 42 in
   let treat_node x =
     let add_neighbor y common_weight =
       let dist =
@@ -118,10 +118,10 @@ let compute_all_sym_diff_fast_multiocc children xs =
         + Hashtbl.find total_weights y
         - 2 * common_weight in
       nodes := HSet.add x (HSet.add y !nodes);
-      dists := HPMap.add (x, y) dist !dists in
+      Hashtbl.add dists (x, y) dist in
     Hashtbl.iter add_neighbor (node_neighbors x) in
   List.iter treat_node xs;
-  !nodes, !dists
+  !nodes, dists
 
 let iter_on_cart_prod f xs =
   List.iter (fun x -> List.iter (f x) xs) xs
@@ -335,12 +335,6 @@ let create_start_cluster hash_list =
 let compare_size_of_trees x y =
   compare (size_of_tree List.length x) (size_of_tree List.length y)
 
-let convert_map_to_hm m =
-  let size = HPMap.cardinal m in
-  let ht = Hashtbl.create size in
-  HPMap.iter (Hashtbl.add ht) m;
-  ht
-
 let add_in_assoc tbl (_,(h,xs)) =
   if not (Hashtbl.mem tbl h)
   then Hashtbl.add tbl h (List.sort compare xs)
@@ -358,9 +352,8 @@ let cluster ?filter_small_trees (hash_list : ('a * (Hash.t * Hash.t list)) list)
       (fun (acc,m) (main_hash,xs) -> main_hash::acc,HMap.add main_hash xs m)
       ([],HMap.empty) start in
   let create_leaf k = Leaf (HMap.find k assoc_hash_ident_list) in
-  let was_seen,distance_matrix =
+  let was_seen,hdistance_matrix =
     compute_all_sym_diff_fast_multiocc assoc_main_subs start in
-  let hdistance_matrix = convert_map_to_hm distance_matrix in
   let lst,alone = List.partition (fun x -> HSet.mem x was_seen) start in
   let neighbors = adjacency_lists hdistance_matrix lst in
   let surapprox = surapproximate_classes_nouf neighbors lst in
