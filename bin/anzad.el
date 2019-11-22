@@ -43,9 +43,7 @@
 
 (setq prev_call ())
 
-(cursor-sensor-mode 1)
-
-(defun clean-anzad-prev-call ()
+(defun anzad-clean-prev-call ()
   "Remove annotations from a previous call of anzad."
   (interactive)
   (dolist (elem prev_call)
@@ -62,7 +60,8 @@
 (defun anzad ()
   "Call asak on the file of the current buffer."
   (interactive)
-  (clean-anzad-prev-call)
+  (cursor-sensor-mode 1)
+  (anzad-clean-prev-call)
   (shell-command-to-string "dune build @check")
   (setq letbinds
 	(butlast
