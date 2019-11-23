@@ -78,21 +78,25 @@ let hash_lambda config x =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
   let hash_lst f = hash_lst config.should_sort f in
+  let hash_var var =
+    let str =
+      if not config.hash_var
+      then "Lvar"
+      else Ident.name var
+    in h1 str
+  in
   let rec hash_lambda' x =
     match x with
     | Lvar var ->
-       let str =
-         if not config.hash_var
-         then "Lvar"
-         else Ident.name var
-       in h1 str
-    | Lconst _ -> h1 "Lconst"
+       hash_var var
+    | Lconst _ ->
+       h1 "Lconst"
     | Lapply x ->
        hash_string_lst "Lapply"
          (hash_lambda' x.ap_func :: (List.map hash_lambda' (x.ap_args)))
     | Lfunction x ->
        hash_string_lst "Lfunction"
-         [ hash_lambda'  x.body ]
+         [ hash_lambda' x.body ]
     | Llet (_,_,_,l,r) ->
        hash_string_lst "Llet"
          [ hash_lambda' l
@@ -147,9 +151,10 @@ let hash_lambda config x =
          ; hash_lst (hash_case (fun x -> x) hash_lambda') "sw_consts" lst
          ; hash_option hash_lambda' opt
          ]
-    | Lassign (_,l) ->
+    | Lassign (var,l) ->
        hash_string_lst "Lassign"
-         [ hash_lambda' l
+         [ hash_var var
+         ; hash_lambda' l
          ]
     | Levent (l,_) ->
        hash_string_lst "Levent"
