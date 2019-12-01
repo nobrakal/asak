@@ -49,37 +49,49 @@ let print_first toinspect thres =
       | [] -> failwith "print_first_10"
       | (s,x)::xs ->
          Printf.printf "Class n°%d of size %d\n" i s;
-         List.iter print_endline 
+         List.iter print_endline
            (take_first thres (shuffle (flatten_tree x)));
          print_endline "";
          aux (i+1) xs
   in aux 0
 
-(* Does s1 contains s2 ? *)
-let contains s2 s1 =
-  let re = Str.regexp_string s2
-  in
-  try ignore (Str.search_forward re s1 0); true
-  with Not_found -> false
+let index_if_exist s c1 c2 =
+  try
+    String.index s c1
+  with
+  | Not_found -> String.index s c2
 
-let forall_tree p =
-  Asak.Wtree.fold_tree
-    (fun _ -> ( && )) p
+module SSet =
+  Set.Make (
+      struct
+        type t = string
+        let compare = compare
+      end )
 
-let refine_classes xs =
-  let all_to_exclude =
-    ["ocamlbuild";
-     "coq";
-     "ocaml-migrate-parsetree";
-     "omake";
-     "aws";
-     "OASIS";
-     "menhir"] in
-  let pred_on_tree t =
-    List.exists
-      (fun to_exclude -> forall_tree (List.for_all (contains to_exclude)) t)
-      all_to_exclude in
-  List.filter (fun t -> not (pred_on_tree t)) xs
+let get_prefix s =
+  let open String in
+  sub s 0 (index_if_exist s '-' '.')
+
+let get_prefixes t =
+  fold_tree
+    (fun _ -> SSet.union)
+    (List.fold_left (fun acc x -> SSet.add (get_prefix x) acc) SSet.empty) t
+
+let refine_classes l xs =
+  let is_more_than_l_package t =
+    SSet.cardinal (get_prefixes t) > l in
+  List.filter is_more_than_l_package xs
+
+let export_csv classes_with_size = function
+  | None -> ()
+  | Some csvfile ->
+     let assoc_map =
+       List.fold_left (fun acc (x,_) -> IntMap.update x update_plus_one acc) IntMap.empty classes_with_size in
+     let plot =
+       IntMap.fold (fun k v acc -> acc ^ string_of_int k ^ "," ^ string_of_int v ^ "\n") assoc_map "" in
+     let chan = open_out csvfile in
+     output_string chan plot;
+     close_out chan
 
 let print_infos toinspect thres (classes : string list wtree list) csvfile =
   let list_of_lengths = List.rev_map size_of_class classes in
@@ -99,26 +111,29 @@ let print_infos toinspect thres (classes : string list wtree list) csvfile =
   let median = fst @@ List.nth classes_with_size (nb_real_class / 2) in
   Printf.printf "Median of size of classes with more than one element: %d\n" median;
   print_first toinspect thres classes_with_size;
-  let assoc_map =
-    List.fold_left (fun acc (x,_) -> IntMap.update x update_plus_one acc) IntMap.empty classes_with_size in
-  let plot = IntMap.fold (fun k v acc -> acc ^ string_of_int k ^ "," ^ string_of_int v ^ "\n") assoc_map "" in
-  let chan = open_out csvfile in
-  output_string chan plot;
-  close_out chan
+  export_csv classes_with_size csvfile
+
+let map_add_sufix x s =
+  Option.map (fun x -> x ^ s) x
 
 let main filename toinspect thres csvfile =
-  Random.self_init ();
+  Random.init 42;
   let chan = open_in_bin filename in
   let all_cluster : (string list) wtree list = Marshal.from_channel chan in
   print_endline "When considering different versions of the same package:";
-  print_infos toinspect thres all_cluster (csvfile ^ "all.csv");
+  print_infos toinspect thres all_cluster (map_add_sufix csvfile "all.csv");
   print_endline "When considering only one time a given function of a given package:";
-  print_infos toinspect thres (remove_version_all all_cluster) (csvfile ^ "only.csv");
-  print_endline "After some refinement :";
-  print_infos toinspect thres (refine_classes all_cluster) (csvfile ^ "refinement.csv")
+  print_infos toinspect thres (remove_version_all all_cluster) (map_add_sufix csvfile "only.csv");
+  print_endline "After removing classes with less than 2 packages :";
+  print_infos toinspect thres (refine_classes 3 all_cluster) (map_add_sufix csvfile "refinement.csv")
 
-let () = main
-           Sys.argv.(1)
-           (int_of_string Sys.argv.(2))
-           (int_of_string Sys.argv.(3))
-           Sys.argv.(4)
+let get_opt arr i =
+  try Some (Array.get arr i) with
+  | Invalid_argument _ -> None
+
+let () =
+  main
+    Sys.argv.(1)
+    (int_of_string Sys.argv.(2))
+    (int_of_string Sys.argv.(3))
+    (get_opt Sys.argv 4)
