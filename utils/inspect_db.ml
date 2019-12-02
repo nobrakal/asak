@@ -87,7 +87,7 @@ let exists_tree p =
   fold_tree (fun _ -> ( || )) p
 
 let to_exclude =
-  ["menhir"; "oasis"; "myocamlbuild"]
+  ["menhir"; "oasis"; "baseenvlight"; "parse"]
 
 let refine_classes l xs =
   let is_more_than_l_package t =
