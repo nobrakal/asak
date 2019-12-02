@@ -77,10 +77,31 @@ let get_prefixes t =
     (fun _ -> SSet.union)
     (List.fold_left (fun acc x -> SSet.add (get_prefix x) acc) SSet.empty) t
 
+let contains s2 s1 =
+  let re = Str.regexp_string s2
+  in
+  try ignore (Str.search_forward re s1 0); true
+  with Not_found -> false
+
+let exists_tree p =
+  fold_tree (fun _ -> ( || )) p
+
+let to_exclude =
+  ["menhir"; "oasis"; "myocamlbuild"]
+
 let refine_classes l xs =
   let is_more_than_l_package t =
     SSet.cardinal (get_prefixes t) > l in
-  List.filter is_more_than_l_package xs
+  let is_all_to_exclude t =
+    let min_t =
+      fold_tree (fun i x y -> Node (i,x,y))
+        (fun xs -> Leaf (List.map String.lowercase_ascii xs)) t in
+    List.for_all
+      (fun todo ->
+        exists_tree (List.exists (fun s -> not (contains todo s))) min_t)
+      to_exclude in
+  let xs = List.filter is_more_than_l_package xs in
+  List.filter is_all_to_exclude xs
 
 let export_csv classes_with_size = function
   | None -> ()
