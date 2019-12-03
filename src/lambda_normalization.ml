@@ -115,9 +115,10 @@ let create_ident x =
   Ident.create x
 #endif
 
-let normalize_local_variables x =
-  let rec aux i letbinds x =
-    let aux' = aux i letbinds in
+let normalize_local_variables ?name x =
+  (* i for nonrec (from 1 to infinity), j for rec (from -1 to -infinity)*)
+  let rec aux i j letbinds x =
+    let aux' = aux i j letbinds in
     match x with
     | Lvar var ->
        begin
@@ -132,13 +133,13 @@ let normalize_local_variables x =
        let params = extract_params_name x.params in
        let (i,letbinds) =
          List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params (i,letbinds) in
-       Lfunction {x with body=aux i letbinds x.body}
+       Lfunction {x with body=aux i j letbinds x.body}
     | Llet (a,b,id,l,r) ->
-       Llet (a,b,id,aux' l, aux (i+1) ((id,i)::letbinds) r)
+       Llet (a,b,id,aux' l, aux (i+1) j ((id,i)::letbinds) r)
     | Lletrec (lst,l) ->
-       let (i,letbinds) =
-         List.fold_right (fun (id,_) (i,acc) -> (i+1),(id,i)::acc) lst (i,letbinds) in
-       Lletrec (List.map (fun (t,x) -> t,aux i letbinds x) lst, aux i letbinds l)
+       let (j,letbinds) =
+         List.fold_right (fun (id,_) (j,acc) -> (j-1),(id,j)::acc) lst (j,letbinds) in
+       Lletrec (List.map (fun (t,x) -> t,aux i j letbinds x) lst, aux i j letbinds l)
     | Lprim (a,b,c) ->
        Lprim (a, List.map aux' b,c)
     | Lstaticraise (a,b) ->
@@ -173,9 +174,14 @@ let normalize_local_variables x =
     | Lstaticcatch (a,b,c) ->
        Lstaticcatch (aux' a, b, aux' c)
     | Ltrywith (l,id,r) ->
-       Ltrywith (aux' l, id, aux (i+1) ((id,i)::letbinds) r)
+       Ltrywith (aux' l, id, aux (i+1) j ((id,i)::letbinds) r)
     | Lfor (id,a,b,d,c) ->
-       Lfor (id,aux' a, aux' b, d, aux (i+1) ((id,i)::letbinds) c)
+       Lfor (id,aux' a, aux' b, d, aux (i+1) j ((id,i)::letbinds) c)
     | Lsend (a,b,c,d,e) ->
        Lsend (a, aux' b, aux' c, List.map aux' d, e)
-  in aux 0 [] x
+  in
+  let start =
+    match name with
+    | None -> []
+    | Some name -> [name,0]
+  in aux 1 (-1) start x

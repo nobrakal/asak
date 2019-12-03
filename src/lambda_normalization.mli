@@ -10,4 +10,4 @@ val inline_all : Lambda.lambda -> Lambda.lambda
 
 (** Replace all local variables names by unique names depending only of their
     position in the AST. *)
-val normalize_local_variables : Lambda.lambda -> Lambda.lambda
+val normalize_local_variables : ?name:Ident.t -> Lambda.lambda -> Lambda.lambda
