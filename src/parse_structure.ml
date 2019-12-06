@@ -67,8 +67,8 @@ let simplify_lambda lambda =
   Simplif.simplify_lambda "" lambda
 #endif
 
-let lambda_of_expression expr =
-  Lambda_normalization.normalize_local_variables @@
+let lambda_of_expression ?name expr =
+  Lambda_normalization.normalize_local_variables ?name @@
     Lambda_normalization.inline_all @@
       simplify_lambda @@
         Translcore.transl_exp expr
@@ -79,10 +79,15 @@ let get_name_of_pat pat =
   | Tpat_alias(_, id, _) -> Some id
   | _ -> None
 
-let has_name f x =
+let get_name f x =
   match get_name_of_pat x.vb_pat with
+  | Some id when (Ident.name id = f) -> Some id
+  | _ -> None
+
+let has_name f x =
+  match get_name f x with
+  | Some _ -> true
   | None -> false
-  | Some id -> Ident.name id = f
 
 let list_find_map f =
   let aux acc x =
@@ -93,16 +98,16 @@ let list_find_map f =
 
 let get_specific_lambda_of_typedtree name structure =
   let pred_binding x =
-    if has_name name x
-    then Some x.vb_expr
-    else None in
+    match get_name name x with
+    | Some name -> Some (name, x.vb_expr)
+    | None -> None in
   let pred x =
     match x.str_desc with
     | Tstr_value (_,xs) -> list_find_map pred_binding xs
     | _ -> None in
   match list_find_map pred structure.str_items with
   | None -> fail "get_specific_lambda_of_typedtree: function not found"
-  | Some item -> ret @@ lambda_of_expression item
+  | Some (name,item) -> ret @@ lambda_of_expression ~name item
 
 let find_let_in_parsetree_items f =
   let open Parsetree in
@@ -125,8 +130,8 @@ let rec read_module_expr prefix m =
 and read_value_binding prefix x =
   match get_name_of_pat x.vb_pat with
   | Some name ->
-     let name = prefix ^ "." ^ (Ident.name name) in
-     Some ((name , x.vb_pat.pat_loc), lambda_of_expression x.vb_expr)
+     let name_s = prefix ^ "." ^ (Ident.name name) in
+     Some ((name_s , x.vb_pat.pat_loc), lambda_of_expression ~name x.vb_expr)
   | None -> None
 
 and read_item_desc prefix x =
