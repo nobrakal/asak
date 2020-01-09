@@ -26,21 +26,24 @@ let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),
   match Asak.Clustering.HMap.find_opt hash database with
   | None -> ()
   | Some xs ->
-     if is_for_emacs
-     then
-       begin
-         Printf.printf "%d;%d;* %s#" loc_start.pos_cnum loc_end.pos_cnum
-           (String.concat "\n* " xs)
-       end
-     else
-       begin
-         Printf.printf "%s in " name;
-         Location.print_loc Format.std_formatter loc;
-         Format.pp_print_flush Format.std_formatter ();
-         Printf.printf " has the same hash than:\n";
-         List.iter (Printf.printf "* %s\n") (keep_only limit xs);
-         print_endline ""
-       end
+     match List.filter (fun x -> x <> name) xs with
+     | [] -> ()
+     | _ ->
+        if is_for_emacs
+        then
+          begin
+            Printf.printf "%d;%d;* %s#" loc_start.pos_cnum loc_end.pos_cnum
+              (String.concat "\n* " xs)
+          end
+        else
+          begin
+            Printf.printf "%s in " name;
+            Location.print_loc Format.std_formatter loc;
+            Format.pp_print_flush Format.std_formatter ();
+            Printf.printf " has the same hash than:\n";
+            List.iter (Printf.printf "* %s\n") (keep_only limit xs);
+            print_endline ""
+          end
 
 let load_path_init xs =
 #if OCAML_VERSION >= (4, 08, 0)
@@ -105,12 +108,15 @@ let find_cmt_in_paths file paths =
   | None -> failwith "could not find the corresponding cmt"
   | Some x -> x
 
+let update_db =
+  let update_binding db ((x,_),h) =
+    let xs =
+      try Asak.Clustering.HMap.find h db
+      with Not_found -> [] in
+    Asak.Clustering.HMap.add h (x::xs) db in
+  List.fold_left update_binding
+
 let main is_for_emacs limit database full_file =
-  let database : string list Asak.Clustering.HMap.t =
-    match database with
-    | None -> Asak.Clustering.HMap.empty
-    | Some database ->
-       Marshal.from_channel (open_in_bin database) in
   let dir,file = extract_dir_from_file full_file in
   let merlin = dir ^ "/.merlin" in
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
@@ -124,7 +130,12 @@ let main is_for_emacs limit database full_file =
   let hash_list =
     Asak.Lambda_hash.(hash_all {should_sort=false; hash_var=true} 0 lambdas) in
   let main_hash_list = List.map (fun (x,(h,_)) -> x,h) hash_list in
-
+  let database : string list Asak.Clustering.HMap.t =
+    match database with
+    | None -> Asak.Clustering.HMap.empty
+    | Some database ->
+       Marshal.from_channel (open_in_bin database) in
+  let database = update_db database main_hash_list in
   List.iter (analysis is_for_emacs limit database) main_hash_list
 
 open Cmdliner
