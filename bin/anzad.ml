@@ -116,12 +116,32 @@ let main is_for_emacs database full_file =
     Marshal.from_channel (open_in_bin database) in
   List.iter (analysis is_for_emacs database) main_hash_list
 
-let print_help () =
-  print_endline "usage: anzad db.asak dir/file.ml";
-  print_endline "NB: dir must contains a .merlin"
+open Cmdliner
+
+let database =
+  let open Arg in
+  let doc = "The asak database." in
+  required & pos 0 (some string) None & info [] ~doc
+
+let file =
+  let open Arg in
+  let doc = "The path to a file.\n NB: it must be located in a directory which contains a .merlin" in
+  required & pos 1 (some string) None & info [] ~doc
+
+let machine =
+  let open Arg in
+  let doc = "If the output should be machine-readable." in
+  value & flag & info ["e"] ~doc
+
+let info =
+  let doc = "Run Asak on a file." in
+  let man = [
+      `S Manpage.s_bugs;
+      `P "Report bugs to: https://github.com/nobrakal/asak/issues." ]
+  in
+  Term.info "anzad" ~doc ~exits:Term.default_exits ~man
+
+let main_t = Term.(const main $ machine $ database $ file)
 
 let () =
-  match Sys.argv.(1) with
-  | "-h" -> print_help ()
-  | "-e" -> main true Sys.argv.(2) Sys.argv.(3)
-  | x -> main false x Sys.argv.(2)
+  Term.exit @@ Term.eval (main_t, info)

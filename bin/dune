@@ -1,6 +1,6 @@
 (executable
   (name anzad)
-  (libraries str asak)
+  (libraries cmdliner str asak)
   (preprocess (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{input-file})))
 )
 
