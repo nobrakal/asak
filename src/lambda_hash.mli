@@ -14,7 +14,7 @@ type config =
     hash_var : bool; (** If we hash names in the AST. *)
   }
 
-(** A thumbprint is a weighted Digest.t *)
+(** A fingerprint is a weighted Digest.t *)
 type fingerprint = int * Digest.t
 
 (** A type synonym for the result of the {! hash_lambda} function *)
@@ -30,7 +30,6 @@ type hash = fingerprint * fingerprint list
     @param expr The expression.
 
      @return A tuple with the main hash, and a list of hashes of sub-ASTs satisfying the threshold.
-All hashes are given with the weight of their AST.
 *)
 val hash_lambda :
   config ->
@@ -48,6 +47,6 @@ val hash_all :
   ('a * Lambda.lambda) list ->
   ('a * hash) list
 
-(** Escape hashses. *)
+(** Escape hashses for printing. *)
 val escape_hash :
   hash -> hash

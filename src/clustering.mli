@@ -26,20 +26,17 @@ module Hash :
 
 module HMap : Map.S with type key = Hash.t
 
-(** Create initial cluster, grouping labels by fingerprint *)
+(** Create initial clusters, grouping labels by fingerprint *)
 val initial_cluster : ('a * Lambda_hash.fingerprint) list -> 'a list HMap.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
-    clustering using {!semimetric}.
-
-    @param cores The number of cores that the function can use
-    (by default, try to detect how many the computer has).
+    clustering using a particular semimetric.
 
     @param filter_small_trees If specified, will remove hashes
     that do not have at least this weight.
 
     @return A list of trees, where
-    two keys are in the same tree if they share at least one hash and in
+    two keys are in the same tree only if they share at least one hash and in
     the same leaf if they share exactly the same hash list.
 
     The list is sorted with biggest trees first.

@@ -5,7 +5,7 @@
  * asak is distributed under the terms of the MIT license. See the
  * included LICENSE file for details. *)
 
-(** Type used for presenting a partition. *)
+(** Type used to represent a partition. *)
 type 'a partition =
   { bad_type : 'a list ;
     (** Keys identifying codes that either don't implement the searched function,
