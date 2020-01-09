@@ -28,7 +28,7 @@ let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),
   | Some xs ->
      match List.filter (fun x -> x <> name) xs with
      | [] -> ()
-     | _ ->
+     | xs ->
         if is_for_emacs
         then
           begin
@@ -116,7 +116,7 @@ let update_db =
     Asak.Clustering.HMap.add h (x::xs) db in
   List.fold_left update_binding
 
-let main is_for_emacs limit database full_file =
+let hash_file full_file =
   let dir,file = extract_dir_from_file full_file in
   let merlin = dir ^ "/.merlin" in
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
@@ -129,7 +129,10 @@ let main is_for_emacs limit database full_file =
       lambdas in
   let hash_list =
     Asak.Lambda_hash.(hash_all {should_sort=false; hash_var=true} 0 lambdas) in
-  let main_hash_list = List.map (fun (x,(h,_)) -> x,h) hash_list in
+  List.map (fun (x,(h,_)) -> x,h) hash_list
+
+let main is_for_emacs limit database files =
+  let main_hash_list = List.concat (List.map hash_file files) in
   let database : string list Asak.Clustering.HMap.t =
     match database with
     | None -> Asak.Clustering.HMap.empty
@@ -150,7 +153,7 @@ let database =
 
 let file =
   let doc = "The path to a file.\n NB: it must be located in a directory which contains a .merlin" in
-  Arg.(required & pos 0 (some string) None & info [] ~doc)
+  Arg.(non_empty & pos_all string [] & info [] ~doc)
 
 let machine =
   let doc = "If the output should be machine-readable." in
