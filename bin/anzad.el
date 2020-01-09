@@ -67,7 +67,7 @@
 	(butlast
 	 (split-string
 	  (shell-command-to-string
-	   (format "anzad -e %s %s"
+	   (format "anzad -m -d %s %s"
 		   asak_db buffer-file-truename))
 	  "#")))
   (dolist (letbind letbinds)

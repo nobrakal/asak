@@ -14,7 +14,14 @@ let extract_dir_from_file f =
   with
   | Not_found -> ".",f
 
-let analysis is_for_emacs database ((name,({loc_start;loc_end;_} as loc)),hash) =
+let rec keep_only i = function
+  | [] -> []
+  | x::xs ->
+     if i <= 0
+     then []
+     else x::(keep_only (i-1) xs)
+
+let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),hash) =
   let open Lexing in
   match Asak.Clustering.HMap.find_opt hash database with
   | None -> ()
@@ -31,7 +38,7 @@ let analysis is_for_emacs database ((name,({loc_start;loc_end;_} as loc)),hash) 
          Location.print_loc Format.std_formatter loc;
          Format.pp_print_flush Format.std_formatter ();
          Printf.printf " has the same hash than:\n";
-         List.iter (Printf.printf "* %s\n") xs;
+         List.iter (Printf.printf "* %s\n") (keep_only limit xs);
          print_endline ""
        end
 
@@ -98,7 +105,12 @@ let find_cmt_in_paths file paths =
   | None -> failwith "could not find the corresponding cmt"
   | Some x -> x
 
-let main is_for_emacs database full_file =
+let main is_for_emacs limit database full_file =
+  let database : string list Asak.Clustering.HMap.t =
+    match database with
+    | None -> Asak.Clustering.HMap.empty
+    | Some database ->
+       Marshal.from_channel (open_in_bin database) in
   let dir,file = extract_dir_from_file full_file in
   let merlin = dir ^ "/.merlin" in
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
@@ -112,26 +124,26 @@ let main is_for_emacs database full_file =
   let hash_list =
     Asak.Lambda_hash.(hash_all {should_sort=false; hash_var=true} 0 lambdas) in
   let main_hash_list = List.map (fun (x,(h,_)) -> x,h) hash_list in
-  let database : string list Asak.Clustering.HMap.t =
-    Marshal.from_channel (open_in_bin database) in
-  List.iter (analysis is_for_emacs database) main_hash_list
+
+  List.iter (analysis is_for_emacs limit database) main_hash_list
 
 open Cmdliner
 
+let limit =
+  let doc = "Limit of size of printed classes." in
+  Arg.(value & opt int 10 & info ["l";"limit"] ~doc)
+
 let database =
-  let open Arg in
   let doc = "The asak database." in
-  required & pos 0 (some string) None & info [] ~doc
+  Arg.(value & opt (some string) None & info ["d";"database"] ~doc)
 
 let file =
-  let open Arg in
   let doc = "The path to a file.\n NB: it must be located in a directory which contains a .merlin" in
-  required & pos 1 (some string) None & info [] ~doc
+  Arg.(required & pos 0 (some string) None & info [] ~doc)
 
 let machine =
-  let open Arg in
   let doc = "If the output should be machine-readable." in
-  value & flag & info ["e"] ~doc
+  Arg.(value & flag & info ["m";"machine"] ~doc)
 
 let info =
   let doc = "Run Asak on a file." in
@@ -141,7 +153,7 @@ let info =
   in
   Term.info "anzad" ~doc ~exits:Term.default_exits ~man
 
-let main_t = Term.(const main $ machine $ database $ file)
+let main_t = Term.(const main $ machine $ limit $ database $ file)
 
 let () =
   Term.exit @@ Term.eval (main_t, info)
