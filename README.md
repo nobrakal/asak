@@ -8,7 +8,7 @@ Asak is an OCaml library that allows to identify similar OCaml codes.
 
 * For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close".
 
-* For redundancy detection: `Asak.Redundancy` provides a function `search` which takes filenames and produces a clustering of the closest toplevel let-definitions.
+* For redundancy detection: the binary `anzad` provides functions to inspect an OCaml project built with `dune` and compare it with a database.
 
 ## How ?
 
