@@ -161,9 +161,10 @@ let machine =
 
 let info =
   let doc = "Run Asak on a file." in
-  let man = [
-      `S Manpage.s_bugs;
-      `P "Report bugs to: https://github.com/nobrakal/asak/issues." ]
+  let man =
+    [ `P "Before running anzad, run `dune build @check`."
+    ; `S Manpage.s_bugs
+    ; `P "Report bugs to: https://github.com/nobrakal/asak/issues." ]
   in
   Term.info "anzad" ~doc ~exits:Term.default_exits ~man
 
