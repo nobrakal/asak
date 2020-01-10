@@ -7,6 +7,8 @@ let load_file f =
   close_in ic;
   s
 
+let concat_path x y = x ^ "/" ^ y
+
 let extract_dir_from_file f =
   try
     let ind = String.rindex f '/' in
@@ -101,7 +103,7 @@ let find_cmt_in_paths file paths =
   let res =
     List.fold_left
       (fun acc x ->
-        try Some (x ^ "/" ^ aux x)
+        try Some (concat_path x (aux x))
         with Not_found -> acc
       ) None paths in
   match res with
@@ -132,7 +134,7 @@ let is_ml x =
 
 let expand_directory dir =
   Array.fold_left
-    (fun acc x -> if is_ml x then (dir ^ "/" ^ x)::acc else acc)
+    (fun acc x -> if is_ml x then (concat_path dir x)::acc else acc)
     []
     (Sys.readdir dir)
 
