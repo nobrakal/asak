@@ -152,8 +152,8 @@ let database =
   Arg.(value & opt (some string) None & info ["d";"database"] ~doc)
 
 let file =
-  let doc = "The path to a file.\n NB: it must be located in a directory which contains a .merlin" in
-  Arg.(non_empty & pos_all string [] & info [] ~doc)
+  let doc = "The path to a .ml file. NB: it must be located in a directory which contains a .merlin" in
+  Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"FILE ")
 
 let machine =
   let doc = "If the output should be machine-readable." in
@@ -164,7 +164,9 @@ let info =
   let man =
     [ `P "Before running anzad, run `dune build @check`."
     ; `S Manpage.s_bugs
-    ; `P "Report bugs to: https://github.com/nobrakal/asak/issues." ]
+    ; `P "Report bugs to: https://github.com/nobrakal/asak/issues."
+    ; `S Manpage.s_see_also
+    ; `P "Project homepage: https://github.com/nobrakal/asak/" ]
   in
   Term.info "anzad" ~doc ~exits:Term.default_exits ~man
 
