@@ -42,7 +42,7 @@ let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),
             Printf.printf "%s in " name;
             Location.print_loc Format.std_formatter loc;
             Format.pp_print_flush Format.std_formatter ();
-            Printf.printf " has the same hash than:\n";
+            Printf.printf " has the same hash than %d function(s):\n" (List.length xs);
             List.iter (Printf.printf "* %s\n") (keep_only limit xs);
             print_endline ""
           end
