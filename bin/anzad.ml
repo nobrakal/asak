@@ -108,14 +108,6 @@ let find_cmt_in_paths file paths =
   | None -> failwith "could not find the corresponding cmt"
   | Some x -> x
 
-let update_db =
-  let update_binding db ((x,_),h) =
-    let xs =
-      try Asak.Clustering.HMap.find h db
-      with Not_found -> [] in
-    Asak.Clustering.HMap.add h (x::xs) db in
-  List.fold_left update_binding
-
 let hash_file full_file =
   let dir,file = extract_dir_from_file full_file in
   let merlin = dir ^ "/.merlin" in
@@ -131,7 +123,36 @@ let hash_file full_file =
     Asak.Lambda_hash.(hash_all {should_sort=false; hash_var=true} 0 lambdas) in
   List.map (fun (x,(h,_)) -> x,h) hash_list
 
+let is_ml x =
+  try
+    let ext = String.sub x (String.length x - 3) 3 in
+    ext = ".ml"
+  with
+  | Invalid_argument _ -> false
+
+let expand_directory dir =
+  Array.fold_left
+    (fun acc x -> if is_ml x then (dir ^ "/" ^ x)::acc else acc)
+    []
+    (Sys.readdir dir)
+
+let expand_directories xs =
+  let aux x =
+    if Sys.is_directory x
+    then expand_directory x
+    else [x] in
+  List.concat (List.map aux xs)
+
+let update_db =
+  let update_binding db ((x,_),h) =
+    let xs =
+      try Asak.Clustering.HMap.find h db
+      with Not_found -> [] in
+    Asak.Clustering.HMap.add h (x::xs) db in
+  List.fold_left update_binding
+
 let main is_for_emacs limit database files =
+  let files = expand_directories files in
   let main_hash_list = List.concat (List.map hash_file files) in
   let database : string list Asak.Clustering.HMap.t =
     match database with
@@ -152,8 +173,9 @@ let database =
   Arg.(value & opt (some string) None & info ["d";"database"] ~doc)
 
 let file =
-  let doc = "The path to a .ml file. NB: it must be located in a directory which contains a .merlin" in
-  Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"FILE ")
+  let doc = "The path to a .ml file (in the same directory than a .merlin file) \
+             or a directory containing .ml files (and a .merlin file)." in
+  Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"FILE_OR_DIR")
 
 let machine =
   let doc = "If the output should be machine-readable." in
