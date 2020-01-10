@@ -184,7 +184,7 @@ let machine =
   Arg.(value & flag & info ["m";"machine"] ~doc)
 
 let info =
-  let doc = "Run Asak on a file." in
+  let doc = "Run Asak on a project. Output classes of equivalent codes." in
   let man =
     [ `P "Before running anzad, run `dune build @check`."
     ; `S Manpage.s_bugs
