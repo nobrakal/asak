@@ -34,6 +34,8 @@ A paper (in french) about asak was published in the proceedings of the JFLA (Jou
 
 The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/](https://nobrakal.github.io/asak/asak/).
 
+A man page is available for the binary `anzad`.
+
 #### The name
 
 This tool is about making partitions. "Partition" is the word in french for "sheet music". Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monochord violin.
