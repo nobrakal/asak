@@ -26,6 +26,10 @@ There is two cores:
 
 * `Asak.Clustering`, that defines a function `cluster` which is making a kind of complete-linkage clustering of a list of hashes. This function can parallelize some work.
 
+#### More details
+
+A paper (in french) about asak was published in the proceedings of the JFLA (Journées Francophones des Langages Applicatifs) 2020. It can be found here: https://github.com/nobrakal/asak-paper/
+
 ## Documentation
 
 The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/](https://nobrakal.github.io/asak/asak/).
