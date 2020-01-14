@@ -177,7 +177,7 @@ let database =
 let file =
   let doc = "The path to a .ml file (in the same directory than a .merlin file) \
              or a directory containing .ml files (and a .merlin file)." in
-  Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"FILE_OR_DIR")
+  Arg.(non_empty & pos_all string [] & info [] ~doc ~docv:"MLFILE_OR_DIR")
 
 let machine =
   let doc = "If the output should be machine-readable." in
