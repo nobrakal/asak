@@ -7,7 +7,7 @@ synopsis: "Partitioning OCaml codes"
 description:
 """
 Asak provides functions to parse, type-check and identify similar OCaml codes.
-These functions are then used to partition codes implementing the same function and help to factorize existing code.
+These functions are then used to partition codes implementing the same function and help to detect code duplication.
 """
 
 maintainer: ["alexandre@moine.me"]
