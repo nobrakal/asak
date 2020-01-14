@@ -26,7 +26,7 @@ module Hash :
 
 module HMap : Map.S with type key = Hash.t
 
-(** Create initial clusters, grouping labels by fingerprint *)
+(** Create initial clusters, grouping labels by fingerprint. *)
 val initial_cluster : ('a * Lambda_hash.fingerprint) list -> 'a list HMap.t
 
 (** Given a list of AST hashes (identified by a key), perform a kind of complete-linkage
