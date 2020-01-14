@@ -116,7 +116,7 @@ let hash_file full_file =
   let load =  add_prefix (dir ^ "/") (build_from merlin) in
   let typedtree = find_cmt_in_paths file load in
   let name,typedtree = get_typedtree load typedtree in
-  let lambdas = Asak.Parse_structure.read_structure_with_loc name typedtree in
+  let lambdas = Asak.Parse_structure.read_structure_with_loc ~prefix:name typedtree in
   let lambdas =
     Asak.Lambda_hash.map_snd
       (fun x -> Asak.Lambda_normalization.(normalize_local_variables (inline_all x)))
