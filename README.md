@@ -6,15 +6,25 @@ Asak is an OCaml library that allows to identify similar OCaml codes.
 
 ## Why ?
 
-* For teaching: the module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close".
+### For teaching
 
-* For redundancy detection: the binary `anzad` provides functions to inspect an OCaml project built with `dune` and compare it with a database.
+The module `Asak.Partition` offers a function `create` that produces a partition of codes implementing the same function, where two codes are in the same class if they are syntactically "close".
+
+### For redundancy detection
+The binary `anzad` can detect redundant definitions of an OCaml project built with `dune` and compare it with a database of previously analyzed projects.
+
+To use it on a project with sources in `src/`, run:
+
+```
+dune build @check
+anzad src/
+```
 
 ## How ?
 
 The idea is to compare AST (Abstract Syntax Tree) of codes. However, the OCaml AST is too rich for our purpose (since, for example, `match x with ...` and `function ...` generate two different AST). We decided instead to use the Lambda language, an intermediate language in the OCaml compilation pipeline, where such syntactic sugar is optimized away.
 
-To efficiently compare Lambda trees, we use the idea of [Chilowicz et al.](http://igm.univ-mlv.fr/~chilowi/research/syntax_tree_fingerprinting/syntax_tree_fingerprinting_ICPC09.default_pdf.pdf) which consist in hashing recursively trees.
+To efficiently compare Lambda trees, we use the methodology of [Chilowicz et al.](http://igm.univ-mlv.fr/~chilowi/research/syntax_tree_fingerprinting/syntax_tree_fingerprinting_ICPC09.default_pdf.pdf) which consist in hashing recursively trees.
 
 We then compare hashes and provide a clustering of the closest functions.
 
