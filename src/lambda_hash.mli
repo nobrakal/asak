@@ -10,7 +10,9 @@ type threshold =
   | Hard of int (** A hard threshold. *)
 
 type config =
-  { should_sort : bool; (** If we sort all lists of hashes. *)
+  { should_sort : bool;
+    (** If we sort all lists of hashes. This is useful to identify more codes,
+     but can identify unfactorizable code. *)
     hash_var : bool; (** If we hash names in the AST. *)
   }
 

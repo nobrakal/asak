@@ -34,14 +34,9 @@ let parsetree_of_string str =
   with
   | Lexer.Error _ | Syntaxerr.Error _ -> fail "parse error"
 
-let init_env ?to_open () =
+let init_env () =
   let old_modules = !Clflags.open_modules in
-  let update_opened () =
-    match to_open with
-    | None -> ()
-    | Some x -> Clflags.open_modules := x::!Clflags.open_modules in
   init_path ();
-  update_opened ();
   let env = Compmisc.initial_env () in
   Clflags.open_modules := old_modules;
   env
@@ -53,11 +48,11 @@ let extract_typedtree =
   fun (s,_,_) -> s
 #endif
 
-let type_with_init ?to_open lst =
+let type_with_init lst =
   try
     ret @@
       extract_typedtree @@
-        Typemod.type_structure (init_env ?to_open ()) lst Location.none
+        Typemod.type_structure (init_env ()) lst Location.none
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
 let simplify_lambda lambda =
