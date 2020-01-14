@@ -34,6 +34,8 @@ The documentation of the API is available here: [https://nobrakal.github.io/asak
 
 This tool is about making partitions. "Partition" is the word in french for "sheet music". Consequently, its name is about music: [asak](https://en.wikipedia.org/wiki/Tuareg_people#Music) is the name of Tuareg's traditional songs accompanied by a monochord violin.
 
+This monochord violin is called an [anzad](https://en.wikipedia.org/wiki/Imzad), which is the name of the binary client of asak.
+
 ## License and copyright
 
 Asak is released under the MIT license. The copyright is held by IRIF / OCaml Software Foundation.
