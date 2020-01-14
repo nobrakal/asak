@@ -27,14 +27,13 @@ val get_specific_lambda_of_typedtree : string -> Typedtree.structure -> Lambda.l
 val find_let_in_parsetree_items :
   string -> Parsetree.structure -> Parsetree.structure_item option
 
-(** Return all let bindings of a typedtree converted in lambda expression.
-    The string is the module prefix, usually empty. *)
+(** Return all let bindings of a typedtree converted in lambda expression plus its
+    location. *)
 val read_structure_with_loc :
-  string -> Typedtree.structure -> ((string * Location.t) * Lambda.lambda) list
+  ?prefix:string -> Typedtree.structure -> ((string * Location.t) * Lambda.lambda) list
 
-(** Return all let bindings of a typedtree converted in lambda expressions.
-    The string is the module prefix, usually empty. *)
-val read_structure : string -> Typedtree.structure -> (string * Lambda.lambda) list
+(** Return all let bindings of a typedtree converted in lambda expressions. *)
+val read_structure : ?prefix:string -> Typedtree.structure -> (string * Lambda.lambda) list
 
 (** Read a valid OCaml fragment and compile every toplevel definitions to Lambda. *)
 val read_string : string -> (string * Lambda.lambda) list

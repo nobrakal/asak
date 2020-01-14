@@ -116,39 +116,44 @@ let find_let_in_parsetree_items f =
     | _ -> false in
   List.find_opt pred
 
-let rec read_module_expr prefix m =
+let rec read_module_expr ~prefix m =
   match m.mod_desc with
-  | Tmod_structure structure -> read_structure_with_loc prefix structure
-  | Tmod_functor (_,_,_,m) -> read_module_expr prefix m
+  | Tmod_structure structure -> read_structure_with_loc ~prefix structure
+  | Tmod_functor (_,_,_,m) -> read_module_expr ~prefix m
   | _ -> []
 
-and read_value_binding prefix x =
+and read_value_binding ~prefix x =
   match get_name_of_pat x.vb_pat with
   | Some name ->
      let name_s = prefix ^ "." ^ (Ident.name name) in
      Some ((name_s , x.vb_pat.pat_loc), lambda_of_expression ~name x.vb_expr)
   | None -> None
 
-and read_item_desc prefix x =
+and read_item_desc ~prefix x =
   let read_module_expr m =
-     read_module_expr (prefix ^ "." ^ Ident.name m.mb_id) m.mb_expr in
+    let prefix = prefix ^ "." ^ Ident.name m.mb_id in
+     read_module_expr ~prefix m.mb_expr in
   match x.str_desc with
-  | Tstr_value (_,xs) -> filter_map (read_value_binding prefix) xs
+  | Tstr_value (_,xs) -> filter_map (read_value_binding ~prefix) xs
   | Tstr_module m -> read_module_expr m
   | Tstr_recmodule xs ->
      List.flatten @@
        List.map read_module_expr xs
   | _ -> []
 
-and read_structure_with_loc prefix structure =
+and read_structure_with_loc ?prefix structure =
+  let prefix =
+    match prefix with
+    | None -> ""
+    | Some prefix -> prefix in
   List.flatten @@
-    List.map (read_item_desc prefix) structure.str_items
+    List.map (fun x -> read_item_desc ~prefix x) structure.str_items
 
-let read_structure prefix structure =
-  List.map (fun ((x,_),y) -> x,y) (read_structure_with_loc prefix structure)
+let read_structure ?prefix structure =
+  List.map (fun ((x,_),y) -> x,y) (read_structure_with_loc ?prefix structure)
 
 let read_string str =
   let t = parsetree_of_string str >>= type_with_init in
   match run t with
   | Error e -> failwith e
-  | Ok t -> read_structure "" t
+  | Ok t -> read_structure t
