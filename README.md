@@ -20,6 +20,12 @@ dune build @check
 anzad src/
 ```
 
+## Documentation
+
+The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/](https://nobrakal.github.io/asak/asak/).
+
+A man page is available for the binary `anzad`.
+
 ## How ?
 
 The idea is to compare AST (Abstract Syntax Tree) of codes. However, the OCaml AST is too rich for our purpose (since, for example, `match x with ...` and `function ...` generate two different AST). We decided instead to use the Lambda language, an intermediate language in the OCaml compilation pipeline, where such syntactic sugar is optimized away.
@@ -32,19 +38,19 @@ We then compare hashes and provide a clustering of the closest functions.
 
 There is two cores:
 
-* `Asak.Lambda_hash`, that defines a function `hash_lambda` which is hashing a Lambda expression, capturing the shape of the AST.
+* `Asak.Lambda_hash`, that defines a function
+`hash_lambda : config -> threshold -> Lambda.lambda -> hash` which is hashing a Lambda expression
+capturing the shape of the AST, with respect to the given configuration.
+We recommend to first apply the functions from `Asak.Lambda_normalization` to normalize the Lambda expression.
 
-* `Asak.Clustering`, that defines a function `cluster` which is making a kind of complete-linkage clustering of a list of hashes. This function can parallelize some work.
+* `Asak.Clustering`, that defines a function `cluster : ('a * Lambda_hash.hash) list -> ('a list) wtree list`
+which is making a kind of complete-linkage clustering of a list of hashes.
+The output is a [dendrogram](https://en.wikipedia.org/wiki/Dendrogram) where leaves are close in a tree
+if they are similar. It is guaranteed that two codes in the same tree share at least a sub-AST.
 
-#### More details
+### More details
 
 A paper (in french) about asak was published in the proceedings of the JFLA (Journées Francophones des Langages Applicatifs) 2020. It can be found here: https://github.com/nobrakal/asak-paper/
-
-## Documentation
-
-The documentation of the API is available here: [https://nobrakal.github.io/asak/asak/](https://nobrakal.github.io/asak/asak/).
-
-A man page is available for the binary `anzad`.
 
 #### The name
 
