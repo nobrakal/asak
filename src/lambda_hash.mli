@@ -23,7 +23,8 @@ type fingerprint = int * Digest.t
 type hash = fingerprint * fingerprint list
 
 (** Hash a lambda expression. Usage: [hash_lambda config threshold expr].
-    Two lambda expressions "of the same shape" will share the same hash.
+    Two lambda expressions "of the same shape" will share the same hash. Particularly,
+    constant are ignored.
 
     @param config A configuration for the function.
 
@@ -31,7 +32,7 @@ type hash = fingerprint * fingerprint list
 
     @param expr The expression.
 
-     @return A tuple with the main hash, and a list of hashes of sub-ASTs satisfying the threshold.
+    @return A tuple with the main hash, and a list of hashes of sub-ASTs satisfying the threshold.
 *)
 val hash_lambda :
   config ->
