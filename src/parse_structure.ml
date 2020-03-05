@@ -119,7 +119,12 @@ let find_let_in_parsetree_items f =
 let rec read_module_expr ~prefix m =
   match m.mod_desc with
   | Tmod_structure structure -> read_structure_with_loc ~prefix structure
-  | Tmod_functor (_,_,_,m) -> read_module_expr ~prefix m
+#if OCAML_VERSION >= (4, 10, 0)
+  | Tmod_functor (_,m) ->
+#else
+  | Tmod_functor (_,_,_,m) ->
+#endif
+      read_module_expr ~prefix m
   | _ -> []
 
 and read_value_binding ~prefix x =
@@ -131,7 +136,14 @@ and read_value_binding ~prefix x =
 
 and read_item_desc ~prefix x =
   let read_module_expr m =
-    let prefix = prefix ^ "." ^ Ident.name m.mb_id in
+    let mid =
+#if OCAML_VERSION >= (4, 10, 0)
+      Option.value ~default:"" (Option.map Ident.name m.mb_id)
+#else
+      Ident.name m.mb_id
+#endif
+    in
+    let prefix = prefix ^ "." ^ mid in
      read_module_expr ~prefix m.mb_expr in
   match x.str_desc with
   | Tstr_value (_,xs) -> filter_map (read_value_binding ~prefix) xs
