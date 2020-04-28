@@ -1,7 +1,7 @@
 opam-version: "2.0"
 
 name: "asak"
-version: "0.2"
+version: "0.3"
 
 synopsis: "Partitioning OCaml codes"
 description:
@@ -20,7 +20,7 @@ bug-reports: "https://github.com/nobrakal/asak/issues"
 dev-repo: "git+https://github.com/nobrakal/asak.git"
 
 depends: [
-  "ocaml"    {>= "4.05"}
+  "ocaml"    {>= "4.05" & < "4.11"}
   "cmdliner" {>= "1.0.0"}
   "dune"     {> "1.5"}
   "cppo"     {build & >= "1.6.0"}
