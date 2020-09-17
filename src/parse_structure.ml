@@ -62,11 +62,18 @@ let simplify_lambda lambda =
   Simplif.simplify_lambda "" lambda
 #endif
 
+let transl_exp expr =
+#if OCAML_VERSION >= (4, 11, 0)
+  Translcore.transl_exp ~scopes:[] expr
+#else
+  Translcore.transl_exp expr
+#endif
+
 let lambda_of_expression ?name expr =
   Lambda_normalization.normalize_local_variables ?name @@
     Lambda_normalization.inline_all @@
       simplify_lambda @@
-        Translcore.transl_exp expr
+        transl_exp expr
 
 let get_name_of_pat pat =
   match pat.pat_desc with
