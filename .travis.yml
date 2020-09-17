@@ -22,4 +22,4 @@ deploy:
   local_dir: result/
   on:
     branch: master
-    condition: "$OCAML_VERSION = 4.09"
+    condition: "$OCAML_VERSION = 4.11"
