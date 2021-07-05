@@ -52,7 +52,10 @@ let type_with_init lst =
   try
     ret @@
       extract_typedtree @@
-        Typemod.type_structure (init_env ()) lst Location.none
+        Typemod.type_structure (init_env ()) lst
+#if OCAML_VERSION < (4, 12, 0)
+    Location.none
+#endif
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
 let simplify_lambda lambda =
@@ -63,7 +66,9 @@ let simplify_lambda lambda =
 #endif
 
 let transl_exp expr =
-#if OCAML_VERSION >= (4, 11, 0)
+#if OCAML_VERSION >= (4, 12, 0)
+  Translcore.transl_exp ~scopes:Debuginfo.Scoped_location.empty_scopes expr
+#elif OCAML_VERSION >= (4, 11, 0)
   Translcore.transl_exp ~scopes:[] expr
 #else
   Translcore.transl_exp expr

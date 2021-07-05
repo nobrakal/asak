@@ -107,7 +107,11 @@ let find_cmt_in_paths file paths =
         with Not_found -> acc
       ) None paths in
   match res with
-  | None -> failwith "could not find the corresponding cmt"
+  | None ->
+    failwith
+     (Printf.sprintf "File %s: could not find the corresponding cmt in the following paths:\n%s"
+       file
+       (String.concat "\n" paths))
   | Some x -> x
 
 let hash_file full_file =
@@ -194,7 +198,13 @@ let info =
   in
   Term.info "anzad" ~doc ~exits:Term.default_exits ~man
 
-let main_t = Term.(const main $ machine $ limit $ database $ file)
+let main_t =
+  Term.(const main $ machine $ limit $ database $ file)
 
 let () =
-  Term.exit @@ Term.eval (main_t, info)
+  try Term.exit @@ Term.eval ~catch:false (main_t, info)
+  with
+  | Failure msg
+  | Sys_error msg -> prerr_endline msg; exit 1
+  | e -> prerr_endline (Printexc.to_string e); exit 1
+
