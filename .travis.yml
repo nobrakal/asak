@@ -5,7 +5,7 @@ env:
   - OCAML_VERSION=4.05
   - OCAML_VERSION=4.10
   - OCAML_VERSION=4.11
-  - OCAML_VERSION=4.12.0 OCAML_BETA=enable POST_INSTALL_HOOK="opam install dune odoc; dune build @doc; cp -r _build/default/_doc/_html/ result/"
+  - OCAML_VERSION=4.12.0 OCAML_BETA=enable OPAM_SWITCH=ocaml-base-compiler.4.12.0 POST_INSTALL_HOOK="opam install dune odoc; dune build @doc; cp -r _build/default/_doc/_html/ result/"
 os:
   - linux
 
