@@ -78,17 +78,17 @@ let hash_lambda config x =
   let hash_string_lst = hash_string_lst config.should_sort in
   let hash_lst_anon f = hash_lst_anon config.should_sort f in
   let hash_lst f = hash_lst config.should_sort f in
-  let hash_var var =
+  let hash_var prefix var =
     let str =
       if not config.hash_var
-      then "Lvar"
+      then prefix
       else Ident.name var
     in h1 str
   in
   let rec hash_lambda' x =
     match x with
     | Lvar var ->
-       hash_var var
+       hash_var "Lvar" var
     | Lconst _ ->
        h1 "Lconst"
     | Lapply x ->
@@ -153,7 +153,7 @@ let hash_lambda config x =
          ]
     | Lassign (var,l) ->
        hash_string_lst "Lassign"
-         [ hash_var var
+         [ hash_var "Lvar" var
          ; hash_lambda' l
          ]
     | Levent (l,_) ->
@@ -184,6 +184,14 @@ let hash_lambda config x =
          ; hash_lambda' b
          ; hash_lst_anon hash_lambda' xs
          ]
+#if OCAML_VERSION >= (4, 13, 0)
+    | Lmutvar var ->
+       hash_var "Lmutvar" var
+    | Lmutlet (_,_,l,r) ->
+       hash_string_lst "Lmutlet"
+         [ hash_lambda' l
+         ; hash_lambda' r]
+#endif
   in hash_lambda' x
 
 let sort_filter should_sort threshold main_weight xs =
@@ -207,4 +215,5 @@ let map_snd f xs = List.map (fun (x,y) -> x,f y) xs
 let hash_all config hard_weight xs =
   map_snd (hash_lambda config (Hard hard_weight)) xs
 
-let escape_hash ((p,h),xs) = (p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs
+let escape_hash ((p,h),xs) =
+  (p,String.escaped h),List.map (fun (p,h) -> p,String.escaped h) xs

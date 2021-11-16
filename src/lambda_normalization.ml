@@ -66,6 +66,12 @@ let fold_lambda lvar llet =
      Lfor (e, aux a, aux b, d, aux c)
   | Lsend (a,b,c,d,e) ->
      Lsend (a, aux b, aux c, List.map aux d, e)
+#if OCAML_VERSION >= (4, 13, 0)
+    | Lmutvar x ->
+       lvar x
+    | Lmutlet (e,ident,l,r) ->
+       llet aux Strict e ident l r
+#endif
   in aux
 
 (* Replace every occurence of ident by its body *)
@@ -119,13 +125,13 @@ let normalize_local_variables ?name x =
   (* i for nonrec (from 1 to infinity), j for rec (from -1 to -infinity)*)
   let rec aux i j letbinds x =
     let aux' = aux i j letbinds in
+    let lvar var =
+      match List.assoc_opt var letbinds with
+      | None -> x
+      | Some x -> Lvar (create_ident (string_of_int x)) in
     match x with
     | Lvar var ->
-       begin
-         match List.assoc_opt var letbinds with
-         | None -> x
-         | Some x -> Lvar (create_ident (string_of_int x))
-       end
+       lvar var
     | Lconst _ -> x
     | Lapply x ->
        Lapply {x with ap_func=aux' x.ap_func; ap_args=List.map aux' x.ap_args}
@@ -179,6 +185,12 @@ let normalize_local_variables ?name x =
        Lfor (id,aux' a, aux' b, d, aux (i+1) j ((id,i)::letbinds) c)
     | Lsend (a,b,c,d,e) ->
        Lsend (a, aux' b, aux' c, List.map aux' d, e)
+#if OCAML_VERSION >= (4, 13, 0)
+    | Lmutvar var ->
+       lvar var
+    | Lmutlet (b,id,l,r) ->
+       Lmutlet (b,id,aux' l, aux (i+1) j ((id,i)::letbinds) r)
+#endif
   in
   let start =
     match name with
