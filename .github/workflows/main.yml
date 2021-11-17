@@ -15,7 +15,6 @@ jobs:
         ocaml-version:
           - 4.13.1
           - 4.12.1
-          - 4.11.0
           - 4.10.1
 
     runs-on: ${{ matrix.os }}
@@ -36,3 +35,14 @@ jobs:
       - run: opam exec -- dune build
 
       - run: opam exec -- dune runtest
+
+      - run: opam exec -- dune build @doc
+
+      - name: Deploy to GitHub Pages
+        if:  ${{ matrix.os == ubuntu-latest && matrix.ocaml-version == 4.13.1 }}
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: _build/default/_doc/_html/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
