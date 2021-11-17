@@ -1,6 +1,6 @@
 # asak
 
-[![Build Status](https://travis-ci.com/nobrakal/asak.svg?branch=master)](https://travis-ci.com/nobrakal/asak)
+[![CI](https://github.com/nobrakal/asak/actions/workflows/main.yml/badge.svg)](https://github.com/nobrakal/asak/actions/workflows/main.yml)
 
 Asak is an OCaml library that allows to identify similar OCaml codes.
 
