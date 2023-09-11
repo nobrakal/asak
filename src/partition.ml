@@ -35,14 +35,25 @@ let parse_all_implementations xs =
     >>= fun r -> ret (t,r)
   in filter_rev_map (fun x -> run @@ pred x) xs
 
-let find_sol_type fun_name str =
+let find_value_type_from_file val_name str =
   let found_type =
     parsetree_of_string str
     >>= type_with_init
-    >>= get_type_of_f_in_last fun_name in
+    >>= get_type_of_f_in_last val_name in
   match run found_type with
-  | Error s -> failwith ("Error in solution: " ^ s)
+  | Error s -> failwith ("Cannot find the function named:" ^ s)
   | Ok x -> x.desc
+
+let find_value_type_from_signature val_name cmi_sign =
+  let open Types in
+  let get_typ x =
+    match x with
+    | Sig_value (ident,typ,_) when (Ident.name ident = val_name) ->
+       Some typ.val_type.desc
+    | _ -> None in
+  match List.(find_map get_typ (rev cmi_sign)) with
+  | None -> failwith ("Cannot find the function named:" ^ val_name)
+  | Some x -> x
 
 let eq_type env t1 t2 =
   try Ctype.unify env t1 t2; true with
