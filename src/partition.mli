@@ -18,8 +18,8 @@ type 'a partition =
 *)
   }
 
-val find_value_type_from_file : string -> string -> Types.type_desc
-val find_value_type_from_signature : string -> Types.signature_item list -> Types.type_desc
+val find_value_type_from_file : string -> string -> Types.type_expr
+val find_value_type_from_signature : string -> Types.signature_item list -> Types.type_expr
 
 (** Partitioning OCaml codes. Usage: [create threshold name sol list].
 

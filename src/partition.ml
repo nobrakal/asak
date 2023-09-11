@@ -42,14 +42,14 @@ let find_value_type_from_file val_name str =
     >>= get_type_of_f_in_last val_name in
   match run found_type with
   | Error s -> failwith ("Cannot find the function named:" ^ s)
-  | Ok x -> x.desc
+  | Ok x -> x
 
 let find_value_type_from_signature val_name cmi_sign =
   let open Types in
   let get_typ x =
     match x with
     | Sig_value (ident,typ,_) when (Ident.name ident = val_name) ->
-       Some typ.val_type.desc
+       Some typ.val_type
     | _ -> None in
   match List.(find_map get_typ (rev cmi_sign)) with
   | None -> failwith ("Cannot find the function named:" ^ val_name)
