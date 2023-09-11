@@ -18,6 +18,8 @@ type 'a partition =
 *)
   }
 
+val find_sol_type : string -> string -> Types.type_desc
+
 (** Partitioning OCaml codes. Usage: [create threshold name sol list].
 
     @param threshold Weight threshold required to keep a sub-AST. It is a percentage
@@ -36,6 +38,6 @@ type 'a partition =
 val create :
   int
   -> string
-  -> string
+  -> Types.type_expr
   -> ('a * string) list
   -> 'a partition

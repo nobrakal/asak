@@ -42,7 +42,7 @@ let find_sol_type fun_name str =
     >>= get_type_of_f_in_last fun_name in
   match run found_type with
   | Error s -> failwith ("Error in solution: " ^ s)
-  | Ok x -> x
+  | Ok x -> x.desc
 
 let eq_type env t1 t2 =
   try Ctype.unify env t1 t2; true with
@@ -98,9 +98,8 @@ let add_impl_example m cluster =
     )
     cluster
 
-let create prof fun_name sol codes =
+let create prof fun_name sol_type codes =
   let codes = parse_all_implementations codes in
-  let sol_type = find_sol_type fun_name sol in
   let bad_type,funexist = partition_funexist sol_type fun_name codes in
   let clusters = List.map (add_impl_example funexist) @@ hm_part prof funexist in
   {bad_type; clusters}

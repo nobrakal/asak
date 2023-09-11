@@ -196,15 +196,14 @@ let info =
     ; `S Manpage.s_see_also
     ; `P "Project homepage: https://github.com/nobrakal/asak/" ]
   in
-  Term.info "anzad" ~doc ~exits:Term.default_exits ~man
+  Cmd.info "anzad" ~doc ~man
 
 let main_t =
   Term.(const main $ machine $ limit $ database $ file)
 
 let () =
-  try Term.exit @@ Term.eval ~catch:false (main_t, info)
+  try exit @@ Cmd.eval ~catch:false (Cmd.v info main_t)
   with
   | Failure msg
   | Sys_error msg -> prerr_endline msg; exit 1
   | e -> prerr_endline (Printexc.to_string e); exit 1
-
