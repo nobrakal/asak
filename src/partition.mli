@@ -18,9 +18,6 @@ type 'a partition =
 *)
   }
 
-val find_value_type_from_file : string -> string -> Types.type_expr
-val find_value_type_from_signature : string -> Types.signature_item list -> Types.type_expr
-
 (** Partitioning OCaml codes. Usage: [create threshold name sol list].
 
     @param threshold Weight threshold required to keep a sub-AST. It is a percentage
@@ -42,3 +39,11 @@ val create :
   -> Types.type_expr
   -> ('a * string) list
   -> 'a partition
+
+(** Get the type of a value from a ML file.
+    Usage: [find_value_type_from_file name file]. *)
+val find_value_type_from_file : string -> string -> Types.type_expr
+
+(** Get the type of a value from a signature (usually obtained from a cmi).
+    Usage: [find_value_type_from_signature name file]. *)
+val find_value_type_from_signature : string -> Types.signature_item list -> Types.type_expr
