@@ -42,7 +42,9 @@ let init_env () =
   env
 
 let extract_typedtree =
-#if OCAML_VERSION >= (4, 08, 0)
+#if OCAML_VERSION >= (4, 11, 0)
+  fun (s,_,_,_,_) -> s
+#elif OCAML_VERSION >= (4, 08, 0)
   fun (s,_,_,_) -> s
 #else
   fun (s,_,_) -> s

@@ -23,10 +23,14 @@ let fold_lambda lvar llet =
   | Lapply x ->
      let ap_func = aux x.ap_func in
      let ap_args = List.map aux x.ap_args in
-     Lapply {x with ap_func; ap_args }
-  | Lfunction x ->
-     let body = aux x.body in
-     Lfunction {x with body}
+     Lapply { x with ap_func; ap_args }
+  | Lfunction { kind; params; return; body; attr; loc } ->
+     let body = aux body in
+#if OCAML_VERSION >= (4, 11, 0)
+      lfunction ~kind ~params ~return ~body ~attr ~loc
+#else
+      Lfunction { kind; params; return; body; attr; loc }
+#endif
   | Lletrec (lst,l) ->
      Lletrec (map_snd aux lst, aux l)
   | Lprim (a,lst,b) ->
@@ -135,11 +139,16 @@ let normalize_local_variables ?name x =
     | Lconst _ -> x
     | Lapply x ->
        Lapply {x with ap_func=aux' x.ap_func; ap_args=List.map aux' x.ap_args}
-    | Lfunction x ->
-       let params = extract_params_name x.params in
+    | Lfunction { kind; params; return; body; attr; loc } ->
+       let params' = extract_params_name params in
        let (i,letbinds) =
-         List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params (i,letbinds) in
-       Lfunction {x with body=aux i j letbinds x.body}
+         List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params' (i,letbinds) in
+       let body = aux i j letbinds body in
+#if OCAML_VERSION >= (4, 11, 0)
+       lfunction ~kind ~params ~return ~body ~attr ~loc
+#else
+       Lfunction { kind; params; return; body; attr; loc }
+#endif
     | Llet (a,b,id,l,r) ->
        Llet (a,b,id,aux' l, aux (i+1) j ((id,i)::letbinds) r)
     | Lletrec (lst,l) ->
