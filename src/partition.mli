@@ -36,6 +36,14 @@ type 'a partition =
 val create :
   int
   -> string
-  -> string
+  -> Types.type_expr
   -> ('a * string) list
   -> 'a partition
+
+(** Get the type of a value from a ML file.
+    Usage: [find_value_type_from_file name file]. *)
+val find_value_type_from_file : string -> string -> Types.type_expr
+
+(** Get the type of a value from a signature (usually obtained from a cmi).
+    Usage: [find_value_type_from_signature name file]. *)
+val find_value_type_from_signature : string -> Types.signature_item list -> Types.type_expr

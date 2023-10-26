@@ -1,7 +1,7 @@
 opam-version: "2.0"
 
 name: "asak"
-version: "0.3"
+version: "0.4"
 
 synopsis: "Partitioning OCaml codes"
 description:

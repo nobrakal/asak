@@ -35,14 +35,25 @@ let parse_all_implementations xs =
     >>= fun r -> ret (t,r)
   in filter_rev_map (fun x -> run @@ pred x) xs
 
-let find_sol_type fun_name str =
+let find_value_type_from_file val_name str =
   let found_type =
     parsetree_of_string str
     >>= type_with_init
-    >>= get_type_of_f_in_last fun_name in
+    >>= get_type_of_f_in_last val_name in
   match run found_type with
-  | Error s -> failwith ("Error in solution: " ^ s)
+  | Error s -> failwith ("Cannot find the function named:" ^ s)
   | Ok x -> x
+
+let find_value_type_from_signature val_name cmi_sign =
+  let open Types in
+  let get_typ x =
+    match x with
+    | Sig_value (ident,typ,_) when (Ident.name ident = val_name) ->
+       Some typ.val_type
+    | _ -> None in
+  match List.(find_map get_typ (rev cmi_sign)) with
+  | None -> failwith ("Cannot find the function named:" ^ val_name)
+  | Some x -> x
 
 let eq_type env t1 t2 =
   try Ctype.unify env t1 t2; true with
@@ -98,9 +109,8 @@ let add_impl_example m cluster =
     )
     cluster
 
-let create prof fun_name sol codes =
+let create prof fun_name sol_type codes =
   let codes = parse_all_implementations codes in
-  let sol_type = find_sol_type fun_name sol in
   let bad_type,funexist = partition_funexist sol_type fun_name codes in
   let clusters = List.map (add_impl_example funexist) @@ hm_part prof funexist in
   {bad_type; clusters}
