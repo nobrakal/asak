@@ -26,7 +26,7 @@ let fold_lambda lvar llet =
      Lapply { x with ap_func; ap_args }
   | Lfunction { kind; params; return; body; attr; loc } ->
      let body = aux body in
-#if OCAML_VERSION >= (4, 11, 0)
+#if OCAML_VERSION >= (4, 14, 0)
       lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
       Lfunction { kind; params; return; body; attr; loc }
@@ -144,7 +144,7 @@ let normalize_local_variables ?name x =
        let (i,letbinds) =
          List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params' (i,letbinds) in
        let body = aux i j letbinds body in
-#if OCAML_VERSION >= (4, 11, 0)
+#if OCAML_VERSION >= (4, 14, 0)
        lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
        Lfunction { kind; params; return; body; attr; loc }
