@@ -150,8 +150,14 @@ let normalize_local_variables ?name x =
     | Llet (a,b,id,l,r) ->
        Llet (a,b,id,aux' l, aux (i+1) j ((id,i)::letbinds) r)
     | Lletrec (lst,l) ->
-       let (j,letbinds) =
-         List.fold_right (fun x (j,acc) -> (j-1),(x.id,j)::acc) lst (j,letbinds) in
+       let getid x =
+#if OCAML_VERSION >= (5, 2, 0)
+       x.id
+#else
+       fst x
+#endif
+       in let (j,letbinds) =
+         List.fold_right (fun x (j,acc) -> (j-1),(getid x,j)::acc) lst (j,letbinds) in
        Lletrec (List.map (fun x -> {x with def = lfunc i j letbinds x.def}) lst, aux i j letbinds l)
     | Lprim (a,b,c) ->
        Lprim (a, List.map aux' b,c)
