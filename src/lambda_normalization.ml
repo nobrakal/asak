@@ -86,7 +86,7 @@ let fold_lambda lvar llet =
 #elif OCAML_VERSION >= (4, 14, 0)
     lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
-    { kind; params; return; body; attr; loc }
+    Lfunction { kind; params; return; body; attr; loc }
 #endif
 in aux
 
@@ -230,7 +230,7 @@ and lfunc i j letbinds { kind; params; return; body; attr; loc } =
 #elif OCAML_VERSION >= (4, 14, 0)
   lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
-  { kind; params; return; body; attr; loc }
+  Lfunction { kind; params; return; body; attr; loc }
 #endif
   in
   let start =
