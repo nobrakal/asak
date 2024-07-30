@@ -25,7 +25,11 @@ let fold_lambda lvar llet =
      let ap_args = List.map aux x.ap_args in
      Lapply { x with ap_func; ap_args }
   | Lfunction x ->
+#if OCAML_VERSION >= (5, 2, 0)
      Lfunction (lfunc x)
+#else
+     lfunc x
+#endif
   | Lletrec (lst,l) ->
 #if OCAML_VERSION >= (5, 2, 0)
       Lletrec (List.map (fun x -> {x with def = lfunc x.def}) lst, aux l)
@@ -77,8 +81,10 @@ let fold_lambda lvar llet =
 #endif
   and lfunc { kind; params; return; body; attr; loc } =
     let body = aux body in
-#if OCAML_VERSION >= (4, 14, 0)
+#if OCAML_VERSION >= (5, 2, 0)
     lfunction' ~kind ~params ~return ~body ~attr ~loc
+#elif OCAML_VERSION >= (4, 14, 0)
+    lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
     { kind; params; return; body; attr; loc }
 #endif
@@ -146,7 +152,11 @@ let normalize_local_variables ?name x =
     | Lapply x ->
        Lapply {x with ap_func=aux' x.ap_func; ap_args=List.map aux' x.ap_args}
     | Lfunction x ->
-       Lfunction (lfunc i j letbinds x)
+#if OCAML_VERSION >= (5, 2, 0)
+     Lfunction (lfunc i j letbinds x)
+#else
+     lfunc i j letbinds x
+#endif
     | Llet (a,b,id,l,r) ->
        Llet (a,b,id,aux' l, aux (i+1) j ((id,i)::letbinds) r)
     | Lletrec (lst,l) ->
@@ -157,8 +167,14 @@ let normalize_local_variables ?name x =
        fst x
 #endif
        in let (j,letbinds) =
-         List.fold_right (fun x (j,acc) -> (j-1),(getid x,j)::acc) lst (j,letbinds) in
-       Lletrec (List.map (fun x -> {x with def = lfunc i j letbinds x.def}) lst, aux i j letbinds l)
+            List.fold_right (fun x (j,acc) -> (j-1),(getid x,j)::acc) lst (j,letbinds) in
+       let godef x =
+#if OCAML_VERSION >= (5, 2, 0)
+        {x with def = lfunc i j letbinds x.def}
+#else
+        (fst x, aux i j letbinds (snd x))
+#endif
+      in Lletrec (List.map godef lst, aux i j letbinds l)
     | Lprim (a,b,c) ->
        Lprim (a, List.map aux' b,c)
     | Lstaticraise (a,b) ->
@@ -209,8 +225,10 @@ and lfunc i j letbinds { kind; params; return; body; attr; loc } =
   let (i,letbinds) =
     List.fold_right (fun id (i,acc) -> (i+1, (id,i)::acc)) params' (i,letbinds) in
   let body = aux i j letbinds body in
-#if OCAML_VERSION >= (4, 14, 0)
+#if OCAML_VERSION >= (5, 2, 0)
   lfunction' ~kind ~params ~return ~body ~attr ~loc
+#elif OCAML_VERSION >= (4, 14, 0)
+  lfunction ~kind ~params ~return ~body ~attr ~loc
 #else
   { kind; params; return; body; attr; loc }
 #endif
