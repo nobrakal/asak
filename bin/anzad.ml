@@ -48,7 +48,9 @@ let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),
           end
 
 let load_path_init xs =
-#if OCAML_VERSION >= (4, 08, 0)
+#if OCAML_VERSION >= (5, 00, 0)
+  Load_path.init ~auto_include:Load_path.no_auto_include xs
+#elif OCAML_VERSION >= (4, 08, 0)
   Load_path.init xs
 #else
   Config.load_path := xs @ !Config.load_path

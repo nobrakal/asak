@@ -41,7 +41,12 @@ let hash_string_lst should_sort x xs =
 let hash_prim x = h1 @@
   match x with
   | Pgetglobal id -> "Pgetglobal" ^ Ident.name id
-  | Pfield i -> "Pfield" ^ string_of_int i
+#if OCAML_VERSION >= (5, 00, 0)
+  | Pfield (i, _, _) ->
+#else
+  | Pfield i ->
+#endif
+  "Pfield" ^ string_of_int i
   | Pccall x -> "Pccall" ^ Primitive.native_name x
   | _ -> Printlambda.name_of_primitive x
 

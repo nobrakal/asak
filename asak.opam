@@ -20,7 +20,7 @@ bug-reports: "https://github.com/nobrakal/asak/issues"
 dev-repo: "git+https://github.com/nobrakal/asak.git"
 
 depends: [
-  "ocaml"    {>= "4.10" & < "4.15"}
+  "ocaml"    {>= "4.10"}
   "cmdliner" {>= "1.1.0"}
   "dune"     {> "1.5"}
   "cppo"     {build & >= "1.6.0"}
