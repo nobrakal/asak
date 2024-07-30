@@ -107,7 +107,12 @@ let hash_lambda config x =
          ; hash_lambda' r]
     | Lletrec (lst,l) ->
        hash_string_lst "Lletrec"
-         [ hash_lst_anon (fun x -> lfunc x.def) lst
+         [
+#if OCAML_VERSION >= (4, 2, 0)
+          hash_lst_anon (fun x -> lfunc x.def) lst
+#else
+          hash_lst_anon (fun x -> lfunc (snd x)) lst
+#endif
          ; hash_lambda' l]
     | Lprim (prim,lst,_) ->
        hash_string_lst "Lprim"
