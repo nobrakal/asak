@@ -84,8 +84,13 @@ let lambda_of_expression ?name expr =
 
 let get_name_of_pat pat =
   match pat.pat_desc with
+#if OCAML_VERSION >= (5, 2, 0)
+  | Tpat_var(id, _, _) -> Some id
+  | Tpat_alias(_, id, _, _) -> Some id
+#else
   | Tpat_var(id, _) -> Some id
   | Tpat_alias(_, id, _) -> Some id
+#endif
   | _ -> None
 
 let get_name f x =

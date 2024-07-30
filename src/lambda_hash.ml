@@ -100,15 +100,14 @@ let hash_lambda config x =
        hash_string_lst "Lapply"
          (hash_lambda' x.ap_func :: (List.map hash_lambda' (x.ap_args)))
     | Lfunction x ->
-       hash_string_lst "Lfunction"
-         [ hash_lambda' x.body ]
+       lfunc x
     | Llet (_,_,_,l,r) ->
        hash_string_lst "Llet"
          [ hash_lambda' l
          ; hash_lambda' r]
     | Lletrec (lst,l) ->
        hash_string_lst "Lletrec"
-         [ hash_lst_anon (fun (_,x) -> hash_lambda' x) lst
+         [ hash_lst_anon (fun x -> lfunc x.def) lst
          ; hash_lambda' l]
     | Lprim (prim,lst,_) ->
        hash_string_lst "Lprim"
@@ -197,6 +196,9 @@ let hash_lambda config x =
          [ hash_lambda' l
          ; hash_lambda' r]
 #endif
+  and lfunc x =
+    hash_string_lst "Lfunction"
+      [ hash_lambda' x.body ]
   in hash_lambda' x
 
 let sort_filter should_sort threshold main_weight xs =

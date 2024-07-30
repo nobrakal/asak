@@ -48,7 +48,9 @@ let analysis is_for_emacs limit database ((name,({loc_start;loc_end;_} as loc)),
           end
 
 let load_path_init xs =
-#if OCAML_VERSION >= (5, 00, 0)
+#if OCAML_VERSION >= (5, 2, 0)
+  Load_path.init ~auto_include:Load_path.no_auto_include ~visible:xs ~hidden:[]
+#elif OCAML_VERSION >= (5, 00, 0)
   Load_path.init ~auto_include:Load_path.no_auto_include xs
 #elif OCAML_VERSION >= (4, 08, 0)
   Load_path.init xs
@@ -61,12 +63,19 @@ let get_typedtree load f =
   let cmt = Cmt_format.read_cmt f in
   match cmt.cmt_annots with
   | Implementation structure ->
-     load_path_init (load @ cmt.cmt_loadpath);
-     let map =
-       { Tast_mapper.default
-       with env = fun _ env -> Envaux.env_of_only_summary env } in
-     let structure = map.structure map structure in
-     cmt.cmt_modname,structure
+     let cmt_loadpath =
+#if OCAML_VERSION >= (5, 2, 0)
+     cmt.cmt_loadpath.visible
+#else
+     cmt.cmt_loadpath
+#endif
+    in
+    load_path_init (load @ cmt_loadpath);
+    let map =
+      { Tast_mapper.default
+      with env = fun _ env -> Envaux.env_of_only_summary env } in
+    let structure = map.structure map structure in
+    cmt.cmt_modname,structure
   | _ -> failwith "not a structure"
 
 (** Get all lines starting by 'B' in a .merlin *)
