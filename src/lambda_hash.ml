@@ -143,11 +143,7 @@ let hash_lambda config x =
        hash_string_lst "Lifused"
          [ hash_lambda' l
          ]
-#if OCAML_VERSION >= (4, 06, 0)
     | Lswitch (l,s,_) ->
-#else
-    | Lswitch (l,s) ->
-#endif
        hash_string_lst "Lswitch"
        [ hash_lambda' l
        ; hash_lst (hash_case string_of_int hash_lambda') "sw_consts" s.sw_consts

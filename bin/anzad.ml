@@ -52,10 +52,8 @@ let load_path_init xs =
   Load_path.init ~auto_include:Load_path.no_auto_include ~visible:xs ~hidden:[]
 #elif OCAML_VERSION >= (5, 00, 0)
   Load_path.init ~auto_include:Load_path.no_auto_include xs
-#elif OCAML_VERSION >= (4, 08, 0)
-  Load_path.init xs
 #else
-  Config.load_path := xs @ !Config.load_path
+  Load_path.init xs
 #endif
 
 let get_typedtree load f =
