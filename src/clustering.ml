@@ -197,16 +197,7 @@ module PrioQueue = struct
 end
 
 let init len f =
-#if OCAML_VERSION >= (4, 06, 0)
   List.init len f
-#else
-  let rec aux i n f =
-    if i >= n then []
-    else
-      let r = f i in
-      r :: aux (i+1) n f
-  in aux 0 len f
-#endif
 
 let hierarchical_clustering tbl classes =
   let cluster connex_class =

@@ -48,17 +48,10 @@ let fold_lambda lvar llet =
      Lwhile (aux l, aux r)
   | Lifused (i,l) ->
      Lifused (i, aux l)
-#if OCAML_VERSION >= (4, 06, 0)
   | Lswitch (l,s,i) ->
      let sw_consts = map_snd aux s.sw_consts in
      let sw_blocks = map_snd aux s.sw_blocks in
      Lswitch (aux l, {s with sw_consts; sw_blocks}, i)
-#else
-  | Lswitch (l,s) ->
-     let sw_consts = map_snd aux s.sw_consts in
-     let sw_blocks = map_snd aux s.sw_blocks in
-     Lswitch (aux l, {s with sw_consts; sw_blocks})
-#endif
   | Lstringswitch (l,lst,opt,e) ->
      Lstringswitch (aux l, map_snd aux lst, map_opt aux opt, e)
   | Lassign (i,l) ->
@@ -124,18 +117,10 @@ let inline_all =
   fold_lambda lvar llet
 
 let extract_params_name xs =
-#if OCAML_VERSION >= (4, 08, 0)
   List.map fst xs
-#else
-  xs
-#endif
 
 let create_ident x =
-#if OCAML_VERSION >= (4, 08, 0)
   Ident.create_local x
-#else
-  Ident.create x
-#endif
 
 let normalize_local_variables ?name x =
   (* i for nonrec (from 1 to infinity), j for rec (from -1 to -infinity)*)
@@ -187,19 +172,11 @@ let normalize_local_variables ?name x =
        Lwhile (aux' l, aux' r)
     | Lifused (a,b) ->
        Lifused (a, aux' b)
-#if OCAML_VERSION >= (4, 06, 0)
     | Lswitch (l,s,u) ->
        let s =
          {s with sw_consts = map_snd aux' s.sw_consts;
                  sw_blocks = map_snd aux' s.sw_blocks} in
        Lswitch (aux' l, s, u)
-#else
-    | Lswitch (l,s) ->
-        let s =
-         {s with sw_consts = map_snd aux' s.sw_consts;
-                 sw_blocks = map_snd aux' s.sw_blocks} in
-        Lswitch (aux' l, s)
-#endif
     | Lstringswitch (l,lst,opt,loc) ->
        Lstringswitch (aux' l, map_snd aux' lst, map_opt aux' opt, loc)
     | Lassign (a,b) ->

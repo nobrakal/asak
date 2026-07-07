@@ -17,11 +17,7 @@ let filter_map f xs =
   in List.fold_right aux xs []
 
 let init_path () =
-#if OCAML_VERSION >= (4, 09, 0)
    Compmisc.init_path ()
-#else
-   Compmisc.init_path true
-#endif
 
 let parsetree_of_string str =
   try
@@ -44,10 +40,8 @@ let init_env () =
 let extract_typedtree =
 #if OCAML_VERSION >= (4, 14, 0)
   fun (s,_,_,_,_) -> s
-#elif OCAML_VERSION >= (4, 08, 0)
-  fun (s,_,_,_) -> s
 #else
-  fun (s,_,_) -> s
+  fun (s,_,_,_) -> s
 #endif
 
 let type_with_init lst =
@@ -61,11 +55,7 @@ let type_with_init lst =
   with Typetexp.Error _ | Typecore.Error _ -> fail "type error"
 
 let simplify_lambda lambda =
-#if OCAML_VERSION >= (4, 09, 0)
   Simplif.simplify_lambda lambda
-#else
-  Simplif.simplify_lambda "" lambda
-#endif
 
 let transl_exp expr =
 #if OCAML_VERSION >= (4, 12, 0)
@@ -138,11 +128,7 @@ let find_let_in_parsetree_items f =
 let rec read_module_expr ~prefix m =
   match m.mod_desc with
   | Tmod_structure structure -> read_structure_with_loc ~prefix structure
-#if OCAML_VERSION >= (4, 10, 0)
   | Tmod_functor (_,m) ->
-#else
-  | Tmod_functor (_,_,_,m) ->
-#endif
       read_module_expr ~prefix m
   | _ -> []
 
@@ -156,11 +142,7 @@ and read_value_binding ~prefix x =
 and read_item_desc ~prefix x =
   let read_module_expr m =
     let mid =
-#if OCAML_VERSION >= (4, 10, 0)
       Option.value ~default:"" (Option.map Ident.name m.mb_id)
-#else
-      Ident.name m.mb_id
-#endif
     in
     let prefix = prefix ^ "." ^ mid in
      read_module_expr ~prefix m.mb_expr in
